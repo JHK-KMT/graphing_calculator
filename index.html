@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>기하 작도 시뮬레이터 - 태블릿 지원</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none; /* 태블릿 텍스트 선택 방지 */
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #2b2b2b;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      touch-action: none; /* 브라우저 기본 스크롤 및 줌 방지 (핵심) */
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      display: block;
+      background-color: #ffffff;
+      touch-action: none;
+    }
+
+    .toolbar-container {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #ffffff;
+      padding: 6px 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      border: 1px solid #e0e0e0;
+    }
+
+    .tool-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #4b5563;
+      transition: all 0.15s ease;
+    }
+
+    .tool-btn:hover {
+      background-color: #f3f4f6;
+      color: #111827;
+    }
+
+    .tool-btn.active {
+      background-color: #eff6ff;
+      border-color: #93c5fd;
+      color: #2563eb;
+    }
+
+    .divider {
+      width: 1px;
+      height: 20px;
+      background-color: #e5e7eb;
+      margin: 0 4px;
+    }
+
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid #e5e7eb;
+      cursor: pointer;
+    }
+
+    #color-picker {
+      cursor: pointer;
+      width: 44px;
+      height: 44px;
+      border: none;
+      padding: 0;
+      background: none;
+    }
+
+    #status-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(17, 24, 39, 0.88);
+      color: #f9fafb;
+      font-size: 13px;
+      padding: 8px 18px;
+      border-radius: 20px;
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    #image-input {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar-container">
+    <div class="toolbar">
+      <button class="tool-btn active" id="btn-pan" title="포인터 (ESC)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 7 7-3 1 9 4-4-9 1-3z"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-lasso" title="올가미 (Ctrl+G)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22a5 5 0 0 1-2-4"/><path d="M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><circle cx="5" cy="19" r="2"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-eraser" title="대상 지우개 (Ctrl+R)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-pen" title="자유 곡선 펜">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-point" title="점 찍기 (Ctrl+D)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-segment" title="선분 작도 (Ctrl+L)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><line x1="6.5" y1="17.5" x2="17.5" y2="6.5"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-line" title="무한 직선 작도 (Ctrl+S)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="3"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-compass" title="컴퍼스 (Ctrl+C)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="m11 6-6 15"/><path d="m13 6 6 15"/><path d="M7 16h10"/></svg>
+      </button>
+      <div class="divider"></div>
+      <div class="color-picker-wrapper" title="색상 선택">
+        <input type="color" id="color-picker" value="#374151" />
+      </div>
+      <button class="tool-btn" id="btn-upload" title="이미지 삽입">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+      </button>
+      <input type="file" id="image-input" accept="image/*" />
+      <div class="divider"></div>
+      <button class="tool-btn" id="btn-undo" title="실행 취소 (Ctrl+Z)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-clear" title="전체 지우기">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="status-bar">두 손가락으로 화면을 이동하거나 확대/축소할 수 있습니다.</div>
+
+  <div id="canvas-container">
+    <canvas id="geometryCanvas"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('geometryCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusBar = document.getElementById('status-bar');
+    const imageInput = document.getElementById('image-input');
+    const colorPicker = document.getElementById('color-picker');
+
+    let scale = 1;
+    let originX = 0;
+    let originY = 0;
+
+    let currentColor = '#374151';
+    let currentTool = 'pan'; 
+
+    // 컴퍼스 관련 변수
+    let compassStep = 0;
+    let compassInitialCenter = null;
+    let compassCenter = null;
+    let compassRadius = 0;
+    let compassCurrentAngle = 0;
+    let compassDrawStartAngle = 0;
+    let compassDrawEndAngle = 0;
+
+    let isDrawingLinear = false;
+    let linearStart = null;
+    let isDrawingPen = false;
+    let currentPath = [];
+
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+
+    let mouseWorld = { x: 0, y: 0 };
+    let activeSnapPoint = null;
+
+    let elements = [];
+    const undoStack = [];
+    const redoStack = [];
+
+    let selectedImage = null;
+    let isDraggingImage = false;
+    let isResizingImage = false;
+    let dragOffset = { x: 0, y: 0 };
+
+    // 올가미 관련 변수
+    let isSelectingLasso = false;
+    let lassoPolygon = [];
+    let selectedElements = [];
+    let selectionBox = null;
+    let isTransformingSelection = false;
+    let transformMode = null;
+    let transformStartMouse = null;
+    let originalSelectedBounds = null;
+    let initialElementsState = null;
+    let transformCenter = null;
+    let transformStartAngle = 0;
+    let selectionRotation = 0;
+
+    // 멀티터치(제스처) 상태 관리
+    const activePointers = new Map();
+    let initialPinchDist = null;
+    let initialPinchScale = 1;
+    let initialPanMid = null;
+    let initialOrigin = { x: 0, y: 0 };
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      render();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function screenToWorld(sx, sy) {
+      return {
+        x: (sx - originX) / scale,
+        y: (sy - originY) / scale
+      };
+    }
+
+    function isAngleOnArc(angle, startAngle, endAngle) {
+      const normalize = a => {
+        let res = a % (Math.PI * 2);
+        if (res < 0) res += Math.PI * 2;
+        return res;
+      };
+      const a = normalize(angle);
+      const s = normalize(startAngle);
+      const e = normalize(endAngle);
+      if (s <= e) return a >= s && a <= e;
+      return a >= s || a <= e;
+    }
+
+    // 교점 계산 로직 (기존과 동일)
+    function linearIntersection(l1, l2) {
+      const p1 = l1.p1, p2 = l1.p2;
+      const p3 = l2.p1, p4 = l2.p2;
+      const denom = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+      if (Math.abs(denom) < 1e-9) return null;
+      const t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / denom;
+      const u = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / denom;
+      const tValid = l1.type === 'line' || (t >= 0 && t <= 1);
+      const uValid = l2.type === 'line' || (u >= 0 && u <= 1);
+      if (tValid && uValid) return { x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) };
+      return null;
+    }
+
+    function linearArcIntersection(linear, arc) {
+      const p1 = linear.p1, p2 = linear.p2;
+      const dx = p2.x - p1.x; const dy = p2.y - p1.y;
+      const fx = p1.x - arc.center.x; const fy = p1.y - arc.center.y;
+      const a = dx * dx + dy * dy;
+      const b = 2 * (fx * dx + fy * dy);
+      const c = (fx * fx + fy * fy) - arc.radius * arc.radius;
+      let discriminant = b * b - 4 * a * c;
+      if (discriminant < 0) return [];
+      discriminant = Math.sqrt(discriminant);
+      const t1 = (-b - discriminant) / (2 * a);
+      const t2 = (-b + discriminant) / (2 * a);
+      const pts = [];
+      [t1, t2].forEach(t => {
+        const tValid = linear.type === 'line' || (t >= 0 && t <= 1);
+        if (tValid) {
+          const ix = p1.x + t * dx; const iy = p1.y + t * dy;
+          const ang = Math.atan2(iy - arc.center.y, ix - arc.center.x);
+          if (isAngleOnArc(ang, arc.startAngle, arc.endAngle)) pts.push({ x: ix, y: iy });
+        }
+      });
+      return pts;
+    }
+
+    function arcArcIntersection(arc1, arc2) {
+      const d = Math.hypot(arc2.center.x - arc1.center.x, arc2.center.y - arc1.center.y);
+      if (d > arc1.radius + arc2.radius || d < Math.abs(arc1.radius - arc2.radius) || d === 0) return [];
+      const a = (arc1.radius * arc1.radius - arc2.radius * arc2.radius + d * d) / (2 * d);
+      const h = Math.sqrt(Math.max(0, arc1.radius * arc1.radius - a * a));
+      const x2 = arc1.center.x + a * (arc2.center.x - arc1.center.x) / d;
+      const y2 = arc1.center.y + a * (arc2.center.y - arc1.center.y) / d;
+      const rx = -(arc2.center.y - arc1.center.y) * (h / d);
+      const ry = (arc2.center.x - arc1.center.x) * (h / d);
+      const candidatePoints = [{ x: x2 + rx, y: y2 + ry }, { x: x2 - rx, y: y2 - ry }];
+      const results = [];
+      candidatePoints.forEach(p => {
+        const ang1 = Math.atan2(p.y - arc1.center.y, p.x - arc1.center.x);
+        const ang2 = Math.atan2(p.y - arc2.center.y, p.x - arc2.center.x);
+        if (isAngleOnArc(ang1, arc1.startAngle, arc1.endAngle) && isAngleOnArc(ang2, arc2.startAngle, arc2.endAngle)) {
+          results.push(p);
+        }
+      });
+      return results;
+    }
+
+    function getAllIntersections() {
+      const inters = [];
+      for (let i = 0; i < elements.length; i++) {
+        for (let j = i + 1; j < elements.length; j++) {
+          const e1 = elements[i]; const e2 = elements[j];
+          if ((e1.type === 'segment' || e1.type === 'line') && (e2.type === 'segment' || e2.type === 'line')) {
+            const pt = linearIntersection(e1, e2);
+            if (pt) inters.push(pt);
+          } else if ((e1.type === 'segment' || e1.type === 'line') && e2.type === 'arc') {
+            inters.push(...linearArcIntersection(e1, e2));
+          } else if (e1.type === 'arc' && (e2.type === 'segment' || e2.type === 'line')) {
+            inters.push(...linearArcIntersection(e2, e1));
+          } else if (e1.type === 'arc' && e2.type === 'arc') {
+            inters.push(...arcArcIntersection(e1, e2));
+          }
+        }
+      }
+      return inters;
+    }
+
+    function getAllPoints() {
+      const pts = [];
+      for (const el of elements) {
+        if (el.type === 'point') pts.push({ x: el.x, y: el.y, isIntersection: false });
+        else if (el.type === 'segment' || el.type === 'line') {
+          pts.push({ x: el.p1.x, y: el.p1.y, isIntersection: false });
+          pts.push({ x: el.p2.x, y: el.p2.y, isIntersection: false });
+        } else if (el.type === 'arc') {
+          pts.push({ x: el.center.x, y: el.center.y, isIntersection: false });
+        }
+      }
+      const inters = getAllIntersections();
+      inters.forEach(p => pts.push({ x: p.x, y: p.y, isIntersection: true }));
+      return pts;
+    }
+
+    function findSnapPoint(worldPos) {
+      if (['pan', 'lasso', 'eraser', 'pen'].includes(currentTool)) return null;
+      const points = getAllPoints();
+      const snapThreshold = 14 / scale;
+      let nearest = null;
+      let minDist = snapThreshold;
+      for (const pt of points) {
+        const d = Math.hypot(pt.x - worldPos.x, pt.y - worldPos.y);
+        if (d < minDist) { minDist = d; nearest = pt; }
+      }
+      return nearest;
+    }
+
+    function isPointInPolygon(p, polygon) {
+      let inside = false;
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x, yi = polygon[i].y;
+        const xj = polygon[j].x, yj = polygon[j].y;
+        const intersect = ((yi > p.y) !== (yj > p.y)) && (p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    function distToSegment(p, v, w) {
+      const l2 = (v.x - w.x) ** 2 + (v.y - w.y) ** 2;
+      if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+      let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+    }
+
+    function distToInfiniteLine(p, v, w) {
+      const num = Math.abs((w.y - v.y) * p.x - (w.x - v.x) * p.y + w.x * v.y - w.y * v.x);
+      const den = Math.hypot(w.y - v.y, w.x - v.x);
+      return den === 0 ? Math.hypot(p.x - v.x, p.y - v.y) : num / den;
+    }
+
+    function findElementAt(worldPos) {
+      const threshold = 10 / scale;
+      for (let i = elements.length - 1; i >= 0; i--) {
+        const el = elements[i];
+        if (el.type === 'point') {
+          if (Math.hypot(el.x - worldPos.x, el.y - worldPos.y) <= threshold + 2 / scale) return i;
+        } else if (el.type === 'segment') {
+          if (distToSegment(worldPos, el.p1, el.p2) <= threshold) return i;
+        } else if (el.type === 'line') {
+          if (distToInfiniteLine(worldPos, el.p1, el.p2) <= threshold) return i;
+        } else if (el.type === 'arc') {
+          const d = Math.hypot(worldPos.x - el.center.x, worldPos.y - el.center.y);
+          if (Math.abs(d - el.radius) <= threshold) {
+            const ang = Math.atan2(worldPos.y - el.center.y, worldPos.x - el.center.x);
+            if (isAngleOnArc(ang, el.startAngle, el.endAngle)) return i;
+          }
+        } else if (el.type === 'path') {
+          for (let k = 0; k < el.points.length - 1; k++) {
+            if (distToSegment(worldPos, el.points[k], el.points[k + 1]) <= threshold) return i;
+          }
+        } else if (el.type === 'image') {
+          if (worldPos.x >= el.x && worldPos.x <= el.x + el.w && worldPos.y >= el.y && worldPos.y <= el.y + el.h) return i;
+        }
+      }
+      return -1;
+    }
+
+    function recordState() {
+      undoStack.push(JSON.stringify(elements));
+      redoStack.length = 0;
+    }
+
+    function undo() {
+      if (undoStack.length === 0) return;
+      redoStack.push(JSON.stringify(elements));
+      elements = JSON.parse(undoStack.pop());
+      restoreImages(); clearSelection(); render();
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      undoStack.push(JSON.stringify(elements));
+      elements = JSON.parse(redoStack.pop());
+      restoreImages(); clearSelection(); render();
+    }
+
+    function restoreImages() {
+      elements.forEach(el => {
+        if (el.type === 'image' && !el.imgObj) {
+          const img = new Image(); img.src = el.src; el.imgObj = img;
+        }
+      });
+    }
+
+    function computeSelectionBounds() {
+      if (selectedElements.length === 0) return null;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const el of selectedElements) {
+        if (el.type === 'point') {
+          minX = Math.min(minX, el.x); maxX = Math.max(maxX, el.x);
+          minY = Math.min(minY, el.y); maxY = Math.max(maxY, el.y);
+        } else if (el.type === 'segment' || el.type === 'line') {
+          minX = Math.min(minX, el.p1.x, el.p2.x); maxX = Math.max(maxX, el.p1.x, el.p2.x);
+          minY = Math.min(minY, el.p1.y, el.p2.y); maxY = Math.max(maxY, el.p1.y, el.p2.y);
+        } else if (el.type === 'arc') {
+          minX = Math.min(minX, el.center.x - el.radius); maxX = Math.max(maxX, el.center.x + el.radius);
+          minY = Math.min(minY, el.center.y - el.radius); maxY = Math.max(maxY, el.center.y + el.radius);
+        } else if (el.type === 'path') {
+          for (const pt of el.points) {
+            minX = Math.min(minX, pt.x); maxX = Math.max(maxX, pt.x);
+            minY = Math.min(minY, pt.y); maxY = Math.max(maxY, pt.y);
+          }
+        }
+      }
+      const padding = 12 / scale;
+      return { x: minX - padding, y: minY - padding, w: (maxX - minX) + padding * 2, h: (maxY - minY) + padding * 2 };
+    }
+
+    function clearSelection() {
+      selectedElements = []; selectionBox = null;
+      isTransformingSelection = false; transformMode = null;
+      selectionRotation = 0;
+    }
+
+    function drawGrid() {
+      const gridSize = 40;
+      const left = -originX / scale; const top = -originY / scale;
+      const right = (canvas.width - originX) / scale; const bottom = (canvas.height - originY) / scale;
+      const startX = Math.floor(left / gridSize) * gridSize;
+      const startY = Math.floor(top / gridSize) * gridSize;
+      ctx.save(); ctx.beginPath(); ctx.strokeStyle = '#f3f4f6'; ctx.lineWidth = 1;
+      for (let x = startX; x <= right; x += gridSize) { ctx.moveTo(x, top); ctx.lineTo(x, bottom); }
+      for (let y = startY; y <= bottom; y += gridSize) { ctx.moveTo(left, y); ctx.lineTo(right, y); }
+      ctx.stroke(); ctx.restore();
+    }
+
+    function drawInfiniteLine(p1, p2) {
+      const dx = p2.x - p1.x; const dy = p2.y - p1.y;
+      const d = Math.hypot(dx, dy); if (d === 0) return;
+      const ux = dx / d; const uy = dy / d;
+      const L = 20000 / scale;
+      ctx.beginPath(); ctx.moveTo(p1.x - ux * L, p1.y - uy * L); ctx.lineTo(p1.x + ux * L, p1.y + uy * L); ctx.stroke();
+    }
+
+    function drawPoint(x, y, color = '#111827', radius = 4.5) {
+      ctx.save(); ctx.fillStyle = color; ctx.beginPath();
+      ctx.arc(x, y, radius / scale, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+
+    function renderRealisticCompass(center, pencilPos) {
+      ctx.save();
+      const r = Math.hypot(pencilPos.x - center.x, pencilPos.y - center.y);
+      if (r < 1) { ctx.restore(); return; }
+      const legLength = Math.max(r * 1.1, 75 / scale);
+      const halfR = r / 2;
+      const hHinge = Math.sqrt(Math.max(10, legLength * legLength - halfR * halfR));
+      const ux = (pencilPos.x - center.x) / r; const uy = (pencilPos.y - center.y) / r;
+      const nx = -uy; const ny = ux;
+      const midX = (center.x + pencilPos.x) / 2; const midY = (center.y + pencilPos.y) / 2;
+      const hingeX = midX + nx * hHinge; const hingeY = midY + ny * hHinge;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.2)'; ctx.shadowBlur = 10 / scale;
+      ctx.shadowOffsetX = 3 / scale; ctx.shadowOffsetY = 4 / scale;
+
+      ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 4.5 / scale; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(hingeX, hingeY); ctx.lineTo(center.x, center.y); ctx.stroke();
+
+      ctx.strokeStyle = '#374151'; ctx.lineWidth = 2 / scale;
+      ctx.beginPath(); ctx.moveTo(center.x + (hingeX - center.x) * 0.15, center.y + (hingeY - center.y) * 0.15); ctx.lineTo(center.x, center.y); ctx.stroke();
+
+      ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 5.5 / scale;
+      ctx.beginPath(); ctx.moveTo(hingeX, hingeY); ctx.lineTo(pencilPos.x, pencilPos.y); ctx.stroke();
+
+      const pencilLen = 30 / scale;
+      const pTipX = pencilPos.x; const pTipY = pencilPos.y;
+      const pBackX = pTipX + (hingeX - pTipX) * (pencilLen / legLength);
+      const pBackY = pTipY + (hingeY - pTipY) * (pencilLen / legLength);
+
+      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4 / scale;
+      ctx.beginPath(); ctx.moveTo(pBackX, pBackY); ctx.lineTo(pTipX, pTipY); ctx.stroke();
+      ctx.fillStyle = '#111827'; ctx.beginPath(); ctx.arc(pTipX, pTipY, 2.2 / scale, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#4b5563'; ctx.beginPath(); ctx.arc(hingeX, hingeY, 6.5 / scale, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#9ca3af'; ctx.beginPath(); ctx.arc(hingeX, hingeY, 3 / scale, 0, Math.PI * 2); ctx.fill();
+
+      ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 3.5 / scale;
+      ctx.beginPath(); ctx.moveTo(hingeX, hingeY); ctx.lineTo(hingeX + nx * 14 / scale, hingeY + ny * 14 / scale); ctx.stroke();
+      ctx.restore(); ctx.restore();
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save(); ctx.translate(originX, originY); ctx.scale(scale, scale);
+      drawGrid();
+
+      for (const el of elements) {
+        ctx.strokeStyle = el.color || '#374151'; ctx.fillStyle = el.color || '#1f2937'; ctx.lineWidth = (el.lineWidth || 1.8) / scale;
+        if (el.type === 'image') {
+          if (el.imgObj && el.imgObj.complete) ctx.drawImage(el.imgObj, el.x, el.y, el.w, el.h);
+          if (selectedImage === el) {
+            ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.5 / scale; ctx.strokeRect(el.x, el.y, el.w, el.h);
+            ctx.fillStyle = '#2563eb'; ctx.fillRect(el.x + el.w - 5 / scale, el.y + el.h - 5 / scale, 10 / scale, 10 / scale); ctx.restore();
+          }
+        } else if (el.type === 'point') {
+          drawPoint(el.x, el.y, el.color || '#111827', 4.5);
+        } else if (el.type === 'segment') {
+          ctx.beginPath(); ctx.moveTo(el.p1.x, el.p1.y); ctx.lineTo(el.p2.x, el.p2.y); ctx.stroke();
+          drawPoint(el.p1.x, el.p1.y, el.color); drawPoint(el.p2.x, el.p2.y, el.color);
+        } else if (el.type === 'line') {
+          drawInfiniteLine(el.p1, el.p2);
+          drawPoint(el.p1.x, el.p1.y, el.color); drawPoint(el.p2.x, el.p2.y, el.color);
+        } else if (el.type === 'arc') {
+          ctx.beginPath(); ctx.arc(el.center.x, el.center.y, el.radius, el.startAngle, el.endAngle, false); ctx.stroke();
+          drawPoint(el.center.x, el.center.y, el.color);
+        } else if (el.type === 'path') {
+          if (el.points.length > 1) {
+            ctx.beginPath(); ctx.moveTo(el.points[0].x, el.points[0].y);
+            for (let i = 1; i < el.points.length; i++) ctx.lineTo(el.points[i].x, el.points[i].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      if (currentTool === 'pen' && isDrawingPen && currentPath.length > 1) {
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
+        ctx.beginPath(); ctx.moveTo(currentPath[0].x, currentPath[0].y);
+        for (let i = 1; i < currentPath.length; i++) ctx.lineTo(currentPath[i].x, currentPath[i].y);
+        ctx.stroke();
+      }
+
+      const activePos = activeSnapPoint || mouseWorld;
+
+      if (currentTool === 'segment' && isDrawingLinear && linearStart) {
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
+        ctx.beginPath(); ctx.moveTo(linearStart.x, linearStart.y); ctx.lineTo(activePos.x, activePos.y); ctx.stroke();
+        drawPoint(linearStart.x, linearStart.y, currentColor);
+      }
+
+      if (currentTool === 'line' && isDrawingLinear && linearStart) {
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
+        drawInfiniteLine(linearStart, activePos);
+        drawPoint(linearStart.x, linearStart.y, currentColor);
+      }
+
+      if (currentTool === 'compass') {
+        if (compassStep === 0) {
+          drawPoint(activePos.x, activePos.y, '#2563eb', 5);
+        } else if (compassStep === 1 && compassInitialCenter) {
+          ctx.save(); ctx.strokeStyle = 'rgba(37, 99, 235, 0.4)'; ctx.setLineDash([4 / scale, 4 / scale]);
+          ctx.beginPath(); ctx.moveTo(compassInitialCenter.x, compassInitialCenter.y); ctx.lineTo(activePos.x, activePos.y); ctx.stroke();
+          const r = Math.hypot(activePos.x - compassInitialCenter.x, activePos.y - compassInitialCenter.y);
+          ctx.beginPath(); ctx.arc(compassInitialCenter.x, compassInitialCenter.y, r, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+          drawPoint(compassInitialCenter.x, compassInitialCenter.y, '#2563eb', 4.5); drawPoint(activePos.x, activePos.y, '#2563eb', 4.5);
+        } else if (compassStep === 2 && compassRadius > 0) {
+          const curCenter = compassCenter || activePos;
+          ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.6 / scale; ctx.setLineDash([6 / scale, 4 / scale]);
+          ctx.beginPath(); ctx.arc(curCenter.x, curCenter.y, compassRadius, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+          drawPoint(curCenter.x, curCenter.y, '#2563eb', 5);
+        } else if (compassStep >= 3 && compassCenter) {
+          ctx.save(); ctx.strokeStyle = 'rgba(156, 163, 175, 0.5)'; ctx.setLineDash([4 / scale, 4 / scale]);
+          ctx.beginPath(); ctx.arc(compassCenter.x, compassCenter.y, compassRadius, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+          drawPoint(compassCenter.x, compassCenter.y, '#2563eb', 4.5);
+          if (compassStep === 4) {
+            ctx.save(); ctx.strokeStyle = currentColor; ctx.lineWidth = 2.2 / scale; ctx.beginPath();
+            const ccw = compassDrawEndAngle < compassDrawStartAngle;
+            ctx.arc(compassCenter.x, compassCenter.y, compassRadius, compassDrawStartAngle, compassDrawEndAngle, ccw);
+            ctx.stroke(); ctx.restore();
+            const pencilP = {
+              x: compassCenter.x + compassRadius * Math.cos(compassDrawEndAngle),
+              y: compassCenter.y + compassRadius * Math.sin(compassDrawEndAngle)
+            };
+            renderRealisticCompass(compassCenter, pencilP);
+          }
+        }
+      }
+
+      if (currentTool === 'lasso' && isSelectingLasso && lassoPolygon.length > 1) {
+        ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.5 / scale; ctx.setLineDash([4 / scale, 4 / scale]);
+        ctx.beginPath(); ctx.moveTo(lassoPolygon[0].x, lassoPolygon[0].y);
+        for (let i = 1; i < lassoPolygon.length; i++) ctx.lineTo(lassoPolygon[i].x, lassoPolygon[i].y);
+        ctx.stroke(); ctx.fillStyle = 'rgba(37, 99, 235, 0.08)'; ctx.fill(); ctx.restore();
+      }
+
+      if (selectionBox && selectedElements.length > 0) {
+        ctx.save();
+        let bx = selectionBox.x, by = selectionBox.y, bw = selectionBox.w, bh = selectionBox.h;
+        if (transformMode === 'rotate' && transformCenter) {
+            ctx.translate(transformCenter.x, transformCenter.y); ctx.rotate(selectionRotation); ctx.translate(-transformCenter.x, -transformCenter.y);
+            bx = originalSelectedBounds.x; by = originalSelectedBounds.y; bw = originalSelectedBounds.w; bh = originalSelectedBounds.h;
+        }
+        ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.5 / scale; ctx.setLineDash([4 / scale, 4 / scale]);
+        ctx.strokeRect(bx, by, bw, bh); ctx.setLineDash([]);
+        const hSize = 8 / scale;
+        ctx.fillStyle = '#2563eb'; ctx.fillRect(bx + bw - hSize / 2, by + bh - hSize / 2, hSize, hSize);
+        const rotHandleX = bx + bw / 2, rotHandleY = by - 24 / scale;
+        ctx.beginPath(); ctx.moveTo(bx + bw / 2, by); ctx.lineTo(rotHandleX, rotHandleY); ctx.stroke();
+        ctx.beginPath(); ctx.arc(rotHandleX, rotHandleY, 6 / scale, 0, Math.PI * 2); ctx.fillStyle = '#10b981'; ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+
+      if (currentTool === 'eraser') {
+        const hoverIdx = findElementAt(mouseWorld);
+        if (hoverIdx !== -1) {
+          ctx.save(); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 4 / scale; const el = elements[hoverIdx];
+          if (el.type === 'point') drawPoint(el.x, el.y, '#ef4444', 6);
+          else if (el.type === 'segment') { ctx.beginPath(); ctx.moveTo(el.p1.x, el.p1.y); ctx.lineTo(el.p2.x, el.p2.y); ctx.stroke(); }
+          else if (el.type === 'line') drawInfiniteLine(el.p1, el.p2);
+          else if (el.type === 'arc') { ctx.beginPath(); ctx.arc(el.center.x, el.center.y, el.radius, el.startAngle, el.endAngle, false); ctx.stroke(); }
+          else if (el.type === 'image') ctx.strokeRect(el.x, el.y, el.w, el.h);
+          ctx.restore();
+        }
+      }
+
+      if (activeSnapPoint && !['pan', 'lasso', 'eraser', 'pen'].includes(currentTool)) {
+        ctx.save();
+        if (activeSnapPoint.isIntersection) {
+          ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.stroke();
+          const crossSize = 11 / scale; ctx.beginPath(); ctx.moveTo(activeSnapPoint.x - crossSize, activeSnapPoint.y); ctx.lineTo(activeSnapPoint.x + crossSize, activeSnapPoint.y);
+          ctx.moveTo(activeSnapPoint.x, activeSnapPoint.y - crossSize); ctx.lineTo(activeSnapPoint.x, activeSnapPoint.y + crossSize); ctx.stroke();
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.2)'; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = 'rgba(37, 99, 235, 0.2)'; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    // --- 마우스/터치/펜 이벤트를 통합한 포인터 이벤트 핸들링 ---
+    
+    // 멀티터치 진입 시 진행 중이던 도구 초기화 (오작동 방지)
+    function cancelCurrentAction() {
+      isDrawingLinear = false; linearStart = null;
+      isDrawingPen = false; currentPath = [];
+      isPanning = false; isDraggingImage = false; isResizingImage = false;
+      if (isSelectingLasso) { isSelectingLasso = false; lassoPolygon = []; }
+      if (isTransformingSelection) { isTransformingSelection = false; }
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      canvas.setPointerCapture(e.pointerId);
+      activePointers.set(e.pointerId, e);
+
+      if (activePointers.size === 2) {
+        cancelCurrentAction();
+        const pts = Array.from(activePointers.values());
+        initialPinchDist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
+        initialPinchScale = scale;
+        initialPanMid = { x: (pts[0].clientX + pts[1].clientX) / 2, y: (pts[0].clientY + pts[1].clientY) / 2 };
+        initialOrigin = { x: originX, y: originY };
+        return;
+      }
+
+      if (activePointers.size > 2) return;
+
+      // 일반 단일 터치/클릭 로직 (펜 터치 포함)
+      const rawWorld = screenToWorld(e.clientX, e.clientY);
+      const targetPos = activeSnapPoint || rawWorld;
+
+      if (currentTool === 'pan') {
+        let hit = null;
+        for (let i = elements.length - 1; i >= 0; i--) {
+          const el = elements[i];
+          if (el.type === 'image') {
+            const handleDist = Math.hypot(rawWorld.x - (el.x + el.w), rawWorld.y - (el.y + el.h));
+            if (handleDist <= 12 / scale) { selectedImage = el; isResizingImage = true; return; }
+            if (rawWorld.x >= el.x && rawWorld.x <= el.x + el.w && rawWorld.y >= el.y && rawWorld.y <= el.y + el.h) { hit = el; break; }
+          }
+        }
+        if (hit) {
+          recordState(); selectedImage = hit; isDraggingImage = true;
+          dragOffset = { x: rawWorld.x - hit.x, y: rawWorld.y - hit.y };
+          render(); return;
+        }
+        selectedImage = null; isPanning = true;
+        panStartX = e.clientX - originX; panStartY = e.clientY - originY;
+      }
+      else if (currentTool === 'eraser') {
+        const hitIdx = findElementAt(rawWorld);
+        if (hitIdx !== -1) { recordState(); elements.splice(hitIdx, 1); render(); }
+      }
+      else if (currentTool === 'lasso') {
+        if (selectionBox) {
+          const cx = selectionBox.x + selectionBox.w / 2; const cy = selectionBox.y + selectionBox.h / 2;
+          const rotHandleX = cx; const rotHandleY = selectionBox.y - 24 / scale;
+          if (Math.hypot(rawWorld.x - rotHandleX, rawWorld.y - rotHandleY) <= 12 / scale) {
+            recordState(); isTransformingSelection = true; transformMode = 'rotate';
+            transformStartMouse = { ...rawWorld }; originalSelectedBounds = { ...selectionBox };
+            initialElementsState = JSON.parse(JSON.stringify(selectedElements));
+            transformCenter = { x: cx, y: cy }; transformStartAngle = Math.atan2(rawWorld.y - cy, rawWorld.x - cx);
+            selectionRotation = 0; return;
+          }
+          const handleX = selectionBox.x + selectionBox.w; const handleY = selectionBox.y + selectionBox.h;
+          if (Math.hypot(rawWorld.x - handleX, rawWorld.y - handleY) <= 12 / scale) {
+            recordState(); isTransformingSelection = true; transformMode = 'resize';
+            transformStartMouse = { ...rawWorld }; originalSelectedBounds = { ...selectionBox };
+            initialElementsState = JSON.parse(JSON.stringify(selectedElements)); return;
+          }
+          if (rawWorld.x >= selectionBox.x && rawWorld.x <= selectionBox.x + selectionBox.w && rawWorld.y >= selectionBox.y && rawWorld.y <= selectionBox.y + selectionBox.h) {
+            recordState(); isTransformingSelection = true; transformMode = 'move';
+            transformStartMouse = { ...rawWorld }; originalSelectedBounds = { ...selectionBox };
+            initialElementsState = JSON.parse(JSON.stringify(selectedElements)); return;
+          }
+        }
+        clearSelection(); isSelectingLasso = true; lassoPolygon = [rawWorld];
+      }
+      else if (currentTool === 'pen') { isDrawingPen = true; currentPath = [rawWorld]; }
+      else if (currentTool === 'point') { recordState(); elements.push({ type: 'point', x: targetPos.x, y: targetPos.y, color: currentColor }); render(); }
+      else if (currentTool === 'segment' || currentTool === 'line') { isDrawingLinear = true; linearStart = targetPos; }
+      else if (currentTool === 'compass') {
+        if (compassStep === 0) {
+          compassInitialCenter = { ...targetPos }; compassStep = 1;
+          updateStatus('컴퍼스 [2단계]: 반지름을 지정할 점을 클릭하세요. (ESC: 취소)'); render();
+        } else if (compassStep === 1) {
+          const r = Math.hypot(targetPos.x - compassInitialCenter.x, targetPos.y - compassInitialCenter.y);
+          if (r > 3 / scale) {
+            compassRadius = r; compassStep = 2; compassCenter = { ...targetPos }; 
+            updateStatus('컴퍼스 [3단계]: 마우스를 움직여 중심을 정하고 클릭하여 바늘을 고정하세요.'); render();
+          }
+        } else if (compassStep === 2) {
+          compassCenter = { ...targetPos }; compassStep = 3;
+          updateStatus('컴퍼스 [4단계]: 호를 그릴 시작점에서 마우스를 누르고 드래그하세요. (ESC: 새로 그리기)'); render();
+        } else if (compassStep === 3) {
+          compassDrawStartAngle = Math.atan2(targetPos.y - compassCenter.y, targetPos.x - compassCenter.x);
+          compassDrawEndAngle = compassDrawStartAngle; compassCurrentAngle = compassDrawStartAngle;
+          compassStep = 4; updateStatus('컴퍼스 [4단계]: 마우스를 드래그하여 호를 그리고 놓아 완성하세요.'); render();
+        }
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (activePointers.has(e.pointerId)) {
+        activePointers.set(e.pointerId, e);
+      }
+
+      // 두 손가락 줌/이동 로직
+      if (activePointers.size === 2) {
+        const pts = Array.from(activePointers.values());
+        const currentDist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
+        const currentMid = { x: (pts[0].clientX + pts[1].clientX) / 2, y: (pts[0].clientY + pts[1].clientY) / 2 };
+
+        // 확대/축소
+        const newScale = Math.max(0.1, Math.min(10, initialPinchScale * (currentDist / initialPinchDist)));
+        const scaleRatio = newScale / scale;
+        scale = newScale;
+
+        // 화면 이동 (Pan)
+        const dx = currentMid.x - initialPanMid.x;
+        const dy = currentMid.y - initialPanMid.y;
+        originX = initialOrigin.x + dx;
+        originY = initialOrigin.y + dy;
+
+        // 줌 중심점 보정
+        originX = currentMid.x - (currentMid.x - originX) * scaleRatio;
+        originY = currentMid.y - (currentMid.y - originY) * scaleRatio;
+
+        // 연속적인 움직임을 위해 기준값 갱신
+        initialPinchDist = currentDist;
+        initialPinchScale = scale;
+        initialPanMid = currentMid;
+        initialOrigin = { x: originX, y: originY };
+
+        render();
+        return;
+      }
+
+      // 호버 또는 단일 드래그 로직 (펜 호버는 buttons === 0)
+      mouseWorld = screenToWorld(e.clientX, e.clientY);
+      activeSnapPoint = findSnapPoint(mouseWorld);
+
+      if (currentTool === 'pan') {
+        if (isPanning) { originX = e.clientX - panStartX; originY = e.clientY - panStartY; render(); return; }
+        if (isDraggingImage && selectedImage) { selectedImage.x = mouseWorld.x - dragOffset.x; selectedImage.y = mouseWorld.y - dragOffset.y; render(); return; }
+        if (isResizingImage && selectedImage) { selectedImage.w = Math.max(20, mouseWorld.x - selectedImage.x); selectedImage.h = Math.max(20, mouseWorld.y - selectedImage.y); render(); return; }
+      }
+
+      if (currentTool === 'compass') {
+        if (compassStep === 1 || compassStep === 2) {
+          if (compassStep === 2) compassCenter = { ...activeSnapPoint || mouseWorld }; 
+          render(); return;
+        }
+        if (compassStep === 4) {
+          const currentAngle = Math.atan2(mouseWorld.y - compassCenter.y, mouseWorld.x - compassCenter.x);
+          let diff = currentAngle - compassDrawEndAngle;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          compassDrawEndAngle += diff; compassCurrentAngle = currentAngle; render(); return;
+        }
+      }
+
+      if (currentTool === 'lasso') {
+        if (isSelectingLasso) { lassoPolygon.push(mouseWorld); render(); return; }
+        if (isTransformingSelection && transformStartMouse) {
+          const dx = mouseWorld.x - transformStartMouse.x; const dy = mouseWorld.y - transformStartMouse.y;
+          if (transformMode === 'move') {
+            selectionBox.x = originalSelectedBounds.x + dx; selectionBox.y = originalSelectedBounds.y + dy;
+            for (let i = 0; i < selectedElements.length; i++) {
+              const el = selectedElements[i]; const init = initialElementsState[i];
+              if (el.type === 'point') { el.x = init.x + dx; el.y = init.y + dy; }
+              else if (el.type === 'segment' || el.type === 'line') { el.p1.x = init.p1.x + dx; el.p1.y = init.p1.y + dy; el.p2.x = init.p2.x + dx; el.p2.y = init.p2.y + dy; }
+              else if (el.type === 'arc') { el.center.x = init.center.x + dx; el.center.y = init.center.y + dy; }
+              else if (el.type === 'path') { el.points = init.points.map(p => ({ x: p.x + dx, y: p.y + dy })); }
+            }
+          } else if (transformMode === 'resize') {
+            const originCornerX = originalSelectedBounds.x; const originCornerY = originalSelectedBounds.y;
+            const newW = Math.max(20, originalSelectedBounds.w + dx); const scaleFactor = newW / originalSelectedBounds.w;
+            selectionBox.w = newW; selectionBox.h = originalSelectedBounds.h * scaleFactor;
+            for (let i = 0; i < selectedElements.length; i++) {
+              const el = selectedElements[i]; const init = initialElementsState[i];
+              if (el.type === 'point') { el.x = originCornerX + (init.x - originCornerX) * scaleFactor; el.y = originCornerY + (init.y - originCornerY) * scaleFactor; }
+              else if (el.type === 'segment' || el.type === 'line') { el.p1.x = originCornerX + (init.p1.x - originCornerX) * scaleFactor; el.p1.y = originCornerY + (init.p1.y - originCornerY) * scaleFactor; el.p2.x = originCornerX + (init.p2.x - originCornerX) * scaleFactor; el.p2.y = originCornerY + (init.p2.y - originCornerY) * scaleFactor; }
+              else if (el.type === 'arc') { el.center.x = originCornerX + (init.center.x - originCornerX) * scaleFactor; el.center.y = originCornerY + (init.center.y - originCornerY) * scaleFactor; el.radius = init.radius * scaleFactor; }
+              else if (el.type === 'path') { el.points = init.points.map(p => ({ x: originCornerX + (p.x - originCornerX) * scaleFactor, y: originCornerY + (p.y - originCornerY) * scaleFactor })); }
+            }
+          } else if (transformMode === 'rotate') {
+            const currentAngle = Math.atan2(mouseWorld.y - transformCenter.y, mouseWorld.x - transformCenter.x);
+            selectionRotation = currentAngle - transformStartAngle;
+            for (let i = 0; i < selectedElements.length; i++) {
+                const el = selectedElements[i]; const init = initialElementsState[i];
+                const cx = transformCenter.x; const cy = transformCenter.y; const angle = selectionRotation;
+                const rotatePt = (pt) => {
+                    const dxPt = pt.x - cx; const dyPt = pt.y - cy;
+                    return { x: cx + dxPt * Math.cos(angle) - dyPt * Math.sin(angle), y: cy + dxPt * Math.sin(angle) + dyPt * Math.cos(angle) };
+                };
+                if (el.type === 'point') { const p = rotatePt(init); el.x = p.x; el.y = p.y; }
+                else if (el.type === 'segment' || el.type === 'line') { el.p1 = rotatePt(init.p1); el.p2 = rotatePt(init.p2); }
+                else if (el.type === 'arc') { el.center = rotatePt(init.center); el.startAngle = init.startAngle + angle; el.endAngle = init.endAngle + angle; }
+                else if (el.type === 'path') { el.points = init.points.map(p => rotatePt(p)); }
+            }
+          }
+          render(); return;
+        }
+      }
+
+      if (currentTool === 'pen' && isDrawingPen) { currentPath.push(mouseWorld); render(); return; }
+
+      render();
+    });
+
+    const handlePointerUp = (e) => {
+      activePointers.delete(e.pointerId);
+
+      // 제스처가 끝난 직후에는 의도치 않은 작도 방지
+      if (activePointers.size > 0) return;
+
+      const targetPos = activeSnapPoint || mouseWorld;
+
+      if (currentTool === 'pan') {
+        isPanning = false; isDraggingImage = false; isResizingImage = false;
+      }
+      else if (currentTool === 'compass' && compassStep === 4) {
+        const angleDiff = Math.abs(compassDrawEndAngle - compassDrawStartAngle);
+        if (angleDiff > 0.05) {
+          recordState();
+          elements.push({
+            type: 'arc', center: { ...compassCenter }, radius: compassRadius,
+            startAngle: Math.min(compassDrawStartAngle, compassDrawEndAngle),
+            endAngle: Math.max(compassDrawStartAngle, compassDrawEndAngle), color: currentColor
+          });
+        }
+        compassStep = 3; updateStatus('컴퍼스 [4단계]: 호를 추가로 그리거나 ESC를 눌러 새로 고정하세요.'); render();
+      }
+      else if (currentTool === 'lasso') {
+        if (isSelectingLasso) {
+          isSelectingLasso = false;
+          if (lassoPolygon.length > 2) {
+            selectedElements = elements.filter(el => {
+              if (el.type === 'point') return isPointInPolygon(el, lassoPolygon);
+              if (el.type === 'segment' || el.type === 'line') return isPointInPolygon(el.p1, lassoPolygon) || isPointInPolygon(el.p2, lassoPolygon);
+              if (el.type === 'arc') return isPointInPolygon(el.center, lassoPolygon);
+              if (el.type === 'path') return el.points.some(p => isPointInPolygon(p, lassoPolygon));
+              return false;
+            });
+            if (selectedElements.length > 0) {
+              selectionBox = computeSelectionBounds();
+              updateStatus('올가미: 영역을 이동, 회전, 크기 조절을 할 수 있습니다. (ESC: 취소/포인터)');
+            } else { clearSelection(); updateStatus('올가미: 선택된 요소가 없습니다.'); }
+          }
+          lassoPolygon = []; render();
+        }
+        if (isTransformingSelection) {
+          isTransformingSelection = false;
+          if (['rotate', 'resize', 'move'].includes(transformMode)) { selectionBox = computeSelectionBounds(); }
+          transformMode = null; transformStartMouse = null; selectionRotation = 0; transformCenter = null; render();
+        }
+      }
+      else if (currentTool === 'pen' && isDrawingPen) {
+        isDrawingPen = false;
+        if (currentPath.length > 1) { recordState(); elements.push({ type: 'path', points: currentPath, color: currentColor, lineWidth: 2 }); }
+        currentPath = []; render();
+      }
+      else if ((currentTool === 'segment' || currentTool === 'line') && isDrawingLinear) {
+        isDrawingLinear = false;
+        const dist = Math.hypot(targetPos.x - linearStart.x, targetPos.y - linearStart.y);
+        if (dist > 3) { recordState(); elements.push({ type: currentTool, p1: linearStart, p2: { x: targetPos.x, y: targetPos.y }, color: currentColor }); }
+        linearStart = null; render();
+      }
+    };
+
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+
+    // 마우스 휠(마우스 유저용 줌)
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = 1.08;
+      const mouse = { x: e.clientX, y: e.clientY };
+      const prevScale = scale;
+      if (e.deltaY < 0) scale = Math.min(scale * zoomFactor, 10);
+      else scale = Math.max(scale / zoomFactor, 0.1);
+      originX = mouse.x - (mouse.x - originX) * (scale / prevScale);
+      originY = mouse.y - (mouse.y - originY) * (scale / prevScale);
+      render();
+    }, { passive: false });
+
+
+    // 단축키 설정
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); setActiveTool('pan'); return; }
+      if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'z') { if (e.shiftKey) redo(); else undo(); e.preventDefault(); }
+        else if (key === 'y') { redo(); e.preventDefault(); }
+        else if (key === 'd') { e.preventDefault(); setActiveTool('point'); }
+        else if (key === 'l') { e.preventDefault(); setActiveTool('segment'); }
+        else if (key === 's') { e.preventDefault(); setActiveTool('line'); }
+        else if (key === 'c') { e.preventDefault(); setActiveTool('compass'); }
+        else if (key === 'g') { e.preventDefault(); setActiveTool('lasso'); }
+        else if (key === 'r') { e.preventDefault(); setActiveTool('eraser'); }
+      }
+    });
+
+    colorPicker.addEventListener('input', (e) => { currentColor = e.target.value; });
+
+    function handleImageFile(file, posX, posY) {
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          recordState();
+          const targetWidth = Math.min(img.width, 400);
+          const targetHeight = (img.height / img.width) * targetWidth;
+          const centerPos = posX !== undefined ? screenToWorld(posX, posY) : { x: (canvas.width / 2 - originX) / scale - targetWidth / 2, y: (canvas.height / 2 - originY) / scale - targetHeight / 2 };
+          const imgData = { type: 'image', src: event.target.result, x: centerPos.x, y: centerPos.y, w: targetWidth, h: targetHeight, imgObj: img };
+          elements.unshift(imgData); selectedImage = imgData; setActiveTool('pan'); render();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) handleImageFile(e.dataTransfer.files[0], e.clientX, e.clientY);
+    });
+    imageInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) handleImageFile(e.target.files[0]);
+    });
+
+    function setActiveTool(tool) {
+      currentTool = tool;
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      compassStep = 0; compassInitialCenter = null; compassCenter = null; compassRadius = 0;
+      isDrawingLinear = false; linearStart = null; isDrawingPen = false; currentPath = [];
+      activeSnapPoint = null; clearSelection();
+
+      if (tool === 'pan') { document.getElementById('btn-pan').classList.add('active'); canvas.style.cursor = 'default'; updateStatus('포인터 모드: 화면 이동 및 배치된 이미지 조작 (ESC 누르면 항상 복귀)'); }
+      else if (tool === 'lasso') { document.getElementById('btn-lasso').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('올가미 (Ctrl+G): 마우스로 영역을 둘러싸 선택 (ESC: 포인터)'); }
+      else if (tool === 'eraser') { document.getElementById('btn-eraser').classList.add('active'); canvas.style.cursor = 'pointer'; updateStatus('대상 지우개 (Ctrl+R): 지우고자 하는 요소를 클릭하세요. (ESC: 포인터)'); }
+      else if (tool === 'pen') { document.getElementById('btn-pen').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('자유 곡선 펜: 필기 또는 자유 드로잉 (ESC: 포인터)'); }
+      else if (tool === 'point') { document.getElementById('btn-point').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('점 찍기 (Ctrl+D): 클릭하여 점 생성 (교점 자석 스냅, ESC: 포인터)'); }
+      else if (tool === 'segment') { document.getElementById('btn-segment').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('선분 작도 (Ctrl+L): 두 점을 잇는 유한한 선분 (ESC: 포인터)'); }
+      else if (tool === 'line') { document.getElementById('btn-line').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('직선 작도 (Ctrl+S): 두 점을 지나는 무한 직선 (ESC: 포인터)'); }
+      else if (tool === 'compass') { document.getElementById('btn-compass').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('컴퍼스 [1단계]: 바늘을 꽂을 중심점을 클릭하세요. (ESC: 포인터)'); }
+      render();
+    }
+
+    function updateStatus(text) { statusBar.textContent = text; }
+
+    document.getElementById('btn-pan').onclick = () => setActiveTool('pan');
+    document.getElementById('btn-lasso').onclick = () => setActiveTool('lasso');
+    document.getElementById('btn-eraser').onclick = () => setActiveTool('eraser');
+    document.getElementById('btn-pen').onclick = () => setActiveTool('pen');
+    document.getElementById('btn-point').onclick = () => setActiveTool('point');
+    document.getElementById('btn-segment').onclick = () => setActiveTool('segment');
+    document.getElementById('btn-line').onclick = () => setActiveTool('line');
+    document.getElementById('btn-compass').onclick = () => setActiveTool('compass');
+    document.getElementById('btn-upload').onclick = () => imageInput.click();
+
+    document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(scale * 1.2, 10); render(); };
+    document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(scale / 1.2, 0.1); render(); };
+    document.getElementById('btn-undo').onclick = undo;
+    document.getElementById('btn-clear').onclick = () => { recordState(); elements = []; selectedImage = null; clearSelection(); render(); };
+
+    resizeCanvas();
+    setActiveTool('pan');
+  </script>
+</body>
+</html>
