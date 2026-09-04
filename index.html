@@ -245,15 +245,14 @@
     let transformStartAngle = 0;
     let selectionRotation = 0;
 
-    // 팜 리젝션 & 포인터 관리를 위한 변수
     const activePointers = new Map();
     let initialPinchDist = null;
     let initialPinchScale = 1;
     let initialPanMid = null;
     let initialOrigin = { x: 0, y: 0 };
 
-    let lastPenTime = 0; // 펜이 인식된 마지막 시간
-    let activeDrawingPointerId = null; // 현재 작도를 통제하고 있는 단일 포인터의 ID
+    let lastPenTime = 0; 
+    let activeDrawingPointerId = null; 
 
     window.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -429,13 +428,11 @@
         const d = Math.hypot(pt.x - worldPos.x, pt.y - worldPos.y);
         if (d < minPointDist) { minPointDist = d; nearestPoint = pt; }
       }
-      // 교점 및 지정점 스냅 최우선
       if (nearestPoint) return nearestPoint;
 
       let nearestOnLine = null;
       let minLineDist = snapThreshold;
 
-      // 선/호 위 스냅 차선
       for (const el of elements) {
         let proj = null;
         if (el.type === 'segment') proj = projectPointToSegment(worldPos, el.p1, el.p2);
@@ -454,6 +451,29 @@
       return nearestOnLine;
     }
 
+    // ----------------------------------------------------
+    // 수평/수직 보정 (스냅) 기능 추가
+    // ----------------------------------------------------
+    function getOrthogonalSnap(start, target, hasSnap) {
+      // 이미 기존의 점/교점/선에 스냅되었다면(hasSnap) 기하학적 정확도를 위해 수평/수직 보정을 무시합니다.
+      if (hasSnap) return target; 
+
+      const dx = target.x - start.x;
+      const dy = target.y - start.y;
+      const angle = Math.atan2(dy, dx);
+      const threshold = 4 * Math.PI / 180; // 오차 허용 범위 4도
+      
+      const absAngle = Math.abs(angle);
+      // 수평 스냅 (0도, 180도)
+      if (absAngle < threshold || Math.abs(absAngle - Math.PI) < threshold) {
+        return { x: target.x, y: start.y };
+      } 
+      // 수직 스냅 (90도, 270도)
+      else if (Math.abs(absAngle - Math.PI / 2) < threshold) {
+        return { x: start.x, y: target.y };
+      }
+      return target;
+    }
 
     function isPointInPolygon(p, polygon) {
       let inside = false;
@@ -672,16 +692,21 @@
         ctx.stroke();
       }
 
-      const activePos = activeSnapPoint || mouseWorld;
+      let activePos = activeSnapPoint || mouseWorld;
+
+      // 선분, 무한 직선 작도 시 프리뷰에 수평/수직 보정 스냅 적용
+      if ((currentTool === 'segment' || currentTool === 'line') && isDrawingLinear && linearStart) {
+        activePos = getOrthogonalSnap(linearStart, activePos, activeSnapPoint);
+      }
 
       if (currentTool === 'segment' && isDrawingLinear && linearStart) {
-        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2.5 / scale;
         ctx.beginPath(); ctx.moveTo(linearStart.x, linearStart.y); ctx.lineTo(activePos.x, activePos.y); ctx.stroke();
         drawPoint(linearStart.x, linearStart.y, currentColor);
       }
 
       if (currentTool === 'line' && isDrawingLinear && linearStart) {
-        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2.5 / scale;
         drawInfiniteLine(linearStart, activePos);
         drawPoint(linearStart.x, linearStart.y, currentColor);
       }
@@ -696,7 +721,6 @@
           ctx.beginPath(); ctx.arc(compassInitialCenter.x, compassInitialCenter.y, r, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
           drawPoint(compassInitialCenter.x, compassInitialCenter.y, '#2563eb', 4.5); drawPoint(activePos.x, activePos.y, '#2563eb', 4.5);
           
-          // 추가: 1단계 반지름 지정 중에도 컴퍼스 그래픽 표시
           renderRealisticCompass(compassInitialCenter, activePos);
 
         } else if (compassStep === 2 && compassRadius > 0) {
@@ -787,10 +811,8 @@
       canvas.setPointerCapture(e.pointerId);
       activePointers.set(e.pointerId, e);
 
-      // 펜 인식을 통한 팜 리젝션용 시간 업데이트
       if (e.pointerType === 'pen') lastPenTime = Date.now();
 
-      // S펜 측면 버튼 임시 지우개 모드
       if ((e.buttons & 2) || (e.buttons & 32)) {
         const rawWorld = screenToWorld(e.clientX, e.clientY);
         const hitIdx = findElementAt(rawWorld);
@@ -802,7 +824,6 @@
       const penPts = pts.filter(p => p.pointerType === 'pen');
       const touchPts = pts.filter(p => p.pointerType === 'touch');
 
-      // 두 손가락 줌/이동 우선 인식
       if (touchPts.length === 2 && penPts.length === 0) {
         cancelCurrentAction();
         activeDrawingPointerId = null;
@@ -813,12 +834,9 @@
         return;
       }
 
-      // 팜 리젝션 1: 화면에 펜이 인식중일 때 발생하는 손바닥 터치 무시
       if (penPts.length > 0 && e.pointerType === 'touch') return;
-      // 팜 리젝션 2: 펜 사용 후 2초 이내의 손바닥 터치 무시
       if (e.pointerType === 'touch' && touchPts.length === 1 && Date.now() - lastPenTime < 2000) return;
 
-      // 이미 다른 포인터(예: 손가락)로 그리기 중인데 펜이 화면에 닿으면 펜을 우선시하여 교체
       if (activeDrawingPointerId !== null) {
         if (e.pointerType === 'pen') {
           cancelCurrentAction();
@@ -922,7 +940,6 @@
       const penPts = pts.filter(p => p.pointerType === 'pen');
       const touchPts = pts.filter(p => p.pointerType === 'touch');
 
-      // 줌/이동 처리
       if (touchPts.length === 2 && penPts.length === 0) {
         const currentDist = Math.hypot(touchPts[0].clientX - touchPts[1].clientX, touchPts[0].clientY - touchPts[1].clientY);
         const currentMid = { x: (touchPts[0].clientX + touchPts[1].clientX) / 2, y: (touchPts[0].clientY + touchPts[1].clientY) / 2 };
@@ -948,10 +965,8 @@
         return;
       }
 
-      // 메인 작도 포인터 필터링
       if (activeDrawingPointerId !== null && activeDrawingPointerId !== e.pointerId) return;
 
-      // 화면에 터치가 안 된 호버(Hover) 상태에서의 팜 리젝션 보호
       if (activeDrawingPointerId === null) {
         if (penPts.length > 0 && e.pointerType === 'touch') return;
         if (e.pointerType === 'touch' && Date.now() - lastPenTime < 2000) return;
@@ -1033,7 +1048,6 @@
       activePointers.delete(e.pointerId);
       if (e.pointerType === 'pen') lastPenTime = Date.now();
 
-      // 메인 작도 포인터가 아니면 무시 (손바닥 터치 완료 등)
       if (activeDrawingPointerId !== e.pointerId) return;
 
       const targetPos = activeSnapPoint || mouseWorld;
@@ -1084,12 +1098,16 @@
       }
       else if ((currentTool === 'segment' || currentTool === 'line') && isDrawingLinear) {
         isDrawingLinear = false;
-        const dist = Math.hypot(targetPos.x - linearStart.x, targetPos.y - linearStart.y);
-        if (dist > 3) { recordState(); elements.push({ type: currentTool, p1: linearStart, p2: { x: targetPos.x, y: targetPos.y }, color: currentColor }); }
+        
+        // 최종 결정 시 수평/수직 보정 스냅 적용 
+        let finalTarget = activeSnapPoint || mouseWorld;
+        finalTarget = getOrthogonalSnap(linearStart, finalTarget, activeSnapPoint);
+
+        const dist = Math.hypot(finalTarget.x - linearStart.x, finalTarget.y - linearStart.y);
+        if (dist > 3) { recordState(); elements.push({ type: currentTool, p1: linearStart, p2: { x: finalTarget.x, y: finalTarget.y }, color: currentColor }); }
         linearStart = null; render();
       }
 
-      // 그리기 종료 처리
       activeDrawingPointerId = null;
     };
 
