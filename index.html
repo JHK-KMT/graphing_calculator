@@ -251,8 +251,9 @@
     let initialPanMid = null;
     let initialOrigin = { x: 0, y: 0 };
 
-    let lastPenTime = 0; 
-    let activeDrawingPointerId = null; 
+    // 측면 버튼 누를 때 임시 지우개 모드를 위한 변수
+    let tempEraserMode = false;
+    let savedTool = null;
 
     window.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -428,6 +429,7 @@
         const d = Math.hypot(pt.x - worldPos.x, pt.y - worldPos.y);
         if (d < minPointDist) { minPointDist = d; nearestPoint = pt; }
       }
+
       if (nearestPoint) return nearestPoint;
 
       let nearestOnLine = null;
@@ -448,31 +450,8 @@
           }
         }
       }
+
       return nearestOnLine;
-    }
-
-    // ----------------------------------------------------
-    // 수평/수직 보정 (스냅) 기능 추가
-    // ----------------------------------------------------
-    function getOrthogonalSnap(start, target, hasSnap) {
-      // 이미 기존의 점/교점/선에 스냅되었다면(hasSnap) 기하학적 정확도를 위해 수평/수직 보정을 무시합니다.
-      if (hasSnap) return target; 
-
-      const dx = target.x - start.x;
-      const dy = target.y - start.y;
-      const angle = Math.atan2(dy, dx);
-      const threshold = 4 * Math.PI / 180; // 오차 허용 범위 4도
-      
-      const absAngle = Math.abs(angle);
-      // 수평 스냅 (0도, 180도)
-      if (absAngle < threshold || Math.abs(absAngle - Math.PI) < threshold) {
-        return { x: target.x, y: start.y };
-      } 
-      // 수직 스냅 (90도, 270도)
-      else if (Math.abs(absAngle - Math.PI / 2) < threshold) {
-        return { x: start.x, y: target.y };
-      }
-      return target;
     }
 
     function isPointInPolygon(p, polygon) {
@@ -692,21 +671,16 @@
         ctx.stroke();
       }
 
-      let activePos = activeSnapPoint || mouseWorld;
-
-      // 선분, 무한 직선 작도 시 프리뷰에 수평/수직 보정 스냅 적용
-      if ((currentTool === 'segment' || currentTool === 'line') && isDrawingLinear && linearStart) {
-        activePos = getOrthogonalSnap(linearStart, activePos, activeSnapPoint);
-      }
+      const activePos = activeSnapPoint || mouseWorld;
 
       if (currentTool === 'segment' && isDrawingLinear && linearStart) {
-        ctx.strokeStyle = currentColor; ctx.lineWidth = 2.5 / scale;
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
         ctx.beginPath(); ctx.moveTo(linearStart.x, linearStart.y); ctx.lineTo(activePos.x, activePos.y); ctx.stroke();
         drawPoint(linearStart.x, linearStart.y, currentColor);
       }
 
       if (currentTool === 'line' && isDrawingLinear && linearStart) {
-        ctx.strokeStyle = currentColor; ctx.lineWidth = 2.5 / scale;
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
         drawInfiniteLine(linearStart, activePos);
         drawPoint(linearStart.x, linearStart.y, currentColor);
       }
@@ -720,9 +694,6 @@
           const r = Math.hypot(activePos.x - compassInitialCenter.x, activePos.y - compassInitialCenter.y);
           ctx.beginPath(); ctx.arc(compassInitialCenter.x, compassInitialCenter.y, r, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
           drawPoint(compassInitialCenter.x, compassInitialCenter.y, '#2563eb', 4.5); drawPoint(activePos.x, activePos.y, '#2563eb', 4.5);
-          
-          renderRealisticCompass(compassInitialCenter, activePos);
-
         } else if (compassStep === 2 && compassRadius > 0) {
           const curCenter = compassCenter || activePos;
           ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.6 / scale; ctx.setLineDash([6 / scale, 4 / scale]);
@@ -807,46 +778,63 @@
       if (isTransformingSelection) { isTransformingSelection = false; }
     }
 
+    // --- S펜 측면 버튼(지우개) 토글을 관리하는 핵심 함수 ---
+    function checkPenButton(e) {
+      // 2: 마우스 우클릭 / 펜 측면 버튼, 32: 펜 뒷면 지우개
+      const isEraserButton = (e.buttons & 2) || (e.buttons & 32);
+      
+      // 측면 버튼을 누르기 시작했을 때 (원래 도구 임시 저장하고 지우개로 변경)
+      if (isEraserButton && !tempEraserMode) {
+        cancelCurrentAction(); // 하던 작도 취소
+        tempEraserMode = true;
+        savedTool = currentTool;
+        currentTool = 'eraser';
+        
+        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        const eraserBtn = document.getElementById('btn-eraser');
+        if (eraserBtn) eraserBtn.classList.add('active');
+        
+        canvas.style.cursor = 'pointer';
+        updateStatus('임시 지우개 모드: 측면 버튼을 떼면 원래 도구로 돌아갑니다.');
+      } 
+      // 측면 버튼을 떼었을 때 (원래 쓰던 도구로 복귀)
+      else if (!isEraserButton && tempEraserMode) {
+        tempEraserMode = false;
+        currentTool = savedTool;
+        
+        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        const restoredBtn = document.getElementById('btn-' + currentTool);
+        if (restoredBtn) restoredBtn.classList.add('active');
+        
+        // 커서 및 상태바 메시지 복구
+        if (currentTool === 'pan') { canvas.style.cursor = 'default'; updateStatus('포인터 모드: 화면 이동 및 배치된 이미지 조작'); }
+        else if (currentTool === 'lasso') { canvas.style.cursor = 'crosshair'; updateStatus('올가미: 영역을 둘러싸 선택하세요.'); }
+        else if (currentTool === 'eraser') { canvas.style.cursor = 'pointer'; updateStatus('지우개: 지울 요소를 터치하세요.'); }
+        else if (currentTool === 'pen') { canvas.style.cursor = 'crosshair'; updateStatus('자유 곡선 펜: 자유롭게 그리세요.'); }
+        else if (currentTool === 'point') { canvas.style.cursor = 'crosshair'; updateStatus('점 찍기: 화면을 터치하여 점을 찍으세요.'); }
+        else if (currentTool === 'segment') { canvas.style.cursor = 'crosshair'; updateStatus('선분 작도: 시작점부터 드래그하세요.'); }
+        else if (currentTool === 'line') { canvas.style.cursor = 'crosshair'; updateStatus('직선 작도: 두 점을 지나는 직선을 그립니다.'); }
+        else if (currentTool === 'compass') { canvas.style.cursor = 'crosshair'; updateStatus('컴퍼스: 이어서 작도할 수 있습니다.'); }
+      }
+    }
+
     canvas.addEventListener('pointerdown', (e) => {
       canvas.setPointerCapture(e.pointerId);
       activePointers.set(e.pointerId, e);
 
-      if (e.pointerType === 'pen') lastPenTime = Date.now();
+      // 이벤트 시작 시 펜 버튼 상태 확인하여 도구 전환
+      checkPenButton(e);
 
-      if ((e.buttons & 2) || (e.buttons & 32)) {
-        const rawWorld = screenToWorld(e.clientX, e.clientY);
-        const hitIdx = findElementAt(rawWorld);
-        if (hitIdx !== -1) { recordState(); elements.splice(hitIdx, 1); render(); }
-        return;
-      }
-
-      const pts = Array.from(activePointers.values());
-      const penPts = pts.filter(p => p.pointerType === 'pen');
-      const touchPts = pts.filter(p => p.pointerType === 'touch');
-
-      if (touchPts.length === 2 && penPts.length === 0) {
+      if (activePointers.size === 2) {
         cancelCurrentAction();
-        activeDrawingPointerId = null;
-        initialPinchDist = Math.hypot(touchPts[0].clientX - touchPts[1].clientX, touchPts[0].clientY - touchPts[1].clientY);
+        const pts = Array.from(activePointers.values());
+        initialPinchDist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
         initialPinchScale = scale;
-        initialPanMid = { x: (touchPts[0].clientX + touchPts[1].clientX) / 2, y: (touchPts[0].clientY + touchPts[1].clientY) / 2 };
+        initialPanMid = { x: (pts[0].clientX + pts[1].clientX) / 2, y: (pts[0].clientY + pts[1].clientY) / 2 };
         initialOrigin = { x: originX, y: originY };
         return;
       }
-
-      if (penPts.length > 0 && e.pointerType === 'touch') return;
-      if (e.pointerType === 'touch' && touchPts.length === 1 && Date.now() - lastPenTime < 2000) return;
-
-      if (activeDrawingPointerId !== null) {
-        if (e.pointerType === 'pen') {
-          cancelCurrentAction();
-          activeDrawingPointerId = e.pointerId;
-        } else {
-          return;
-        }
-      } else {
-        activeDrawingPointerId = e.pointerId;
-      }
+      if (activePointers.size > 2) return;
 
       const rawWorld = screenToWorld(e.clientX, e.clientY);
       const targetPos = activeSnapPoint || rawWorld;
@@ -870,6 +858,7 @@
         panStartX = e.clientX - originX; panStartY = e.clientY - originY;
       }
       else if (currentTool === 'eraser') {
+        // 화면 터치하는 즉시 삭제
         const hitIdx = findElementAt(rawWorld);
         if (hitIdx !== -1) { recordState(); elements.splice(hitIdx, 1); render(); }
       }
@@ -927,22 +916,13 @@
         activePointers.set(e.pointerId, e);
       }
 
-      if (e.pointerType === 'pen') lastPenTime = Date.now();
+      // 이동 중에도 펜 버튼 상태 확인하여 도구 전환
+      checkPenButton(e);
 
-      if ((e.buttons & 2) || (e.buttons & 32)) {
-        const rawWorld = screenToWorld(e.clientX, e.clientY);
-        const hitIdx = findElementAt(rawWorld);
-        if (hitIdx !== -1) { recordState(); elements.splice(hitIdx, 1); render(); }
-        return;
-      }
-
-      const pts = Array.from(activePointers.values());
-      const penPts = pts.filter(p => p.pointerType === 'pen');
-      const touchPts = pts.filter(p => p.pointerType === 'touch');
-
-      if (touchPts.length === 2 && penPts.length === 0) {
-        const currentDist = Math.hypot(touchPts[0].clientX - touchPts[1].clientX, touchPts[0].clientY - touchPts[1].clientY);
-        const currentMid = { x: (touchPts[0].clientX + touchPts[1].clientX) / 2, y: (touchPts[0].clientY + touchPts[1].clientY) / 2 };
+      if (activePointers.size === 2) {
+        const pts = Array.from(activePointers.values());
+        const currentDist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
+        const currentMid = { x: (pts[0].clientX + pts[1].clientX) / 2, y: (pts[0].clientY + pts[1].clientY) / 2 };
 
         const newScale = Math.max(0.1, Math.min(10, initialPinchScale * (currentDist / initialPinchDist)));
         const scaleRatio = newScale / scale;
@@ -965,15 +945,15 @@
         return;
       }
 
-      if (activeDrawingPointerId !== null && activeDrawingPointerId !== e.pointerId) return;
-
-      if (activeDrawingPointerId === null) {
-        if (penPts.length > 0 && e.pointerType === 'touch') return;
-        if (e.pointerType === 'touch' && Date.now() - lastPenTime < 2000) return;
-      }
-
       mouseWorld = screenToWorld(e.clientX, e.clientY);
       activeSnapPoint = findSnapPoint(mouseWorld);
+
+      // (추가) 지우개 도구로 드래그하는 중 닿는 객체 연속으로 삭제
+      const isTouching = activePointers.has(e.pointerId);
+      if (currentTool === 'eraser' && isTouching) {
+        const hitIdx = findElementAt(mouseWorld);
+        if (hitIdx !== -1) { recordState(); elements.splice(hitIdx, 1); }
+      }
 
       if (currentTool === 'pan') {
         if (isPanning) { originX = e.clientX - panStartX; originY = e.clientY - panStartY; render(); return; }
@@ -1046,9 +1026,17 @@
 
     const handlePointerUp = (e) => {
       activePointers.delete(e.pointerId);
-      if (e.pointerType === 'pen') lastPenTime = Date.now();
+      
+      const wasEraser = tempEraserMode; // 지우개 모드였는지 기억
+      checkPenButton(e); // 펜을 떼면 원래 툴로 복구됨
 
-      if (activeDrawingPointerId !== e.pointerId) return;
+      if (activePointers.size > 0) return;
+
+      // 지우개 모드에서 빠져나온 직후라면, 현재 툴의 그리기 종료(Up) 로직을 스킵함
+      if (wasEraser) {
+        render();
+        return; 
+      }
 
       const targetPos = activeSnapPoint || mouseWorld;
 
@@ -1098,17 +1086,10 @@
       }
       else if ((currentTool === 'segment' || currentTool === 'line') && isDrawingLinear) {
         isDrawingLinear = false;
-        
-        // 최종 결정 시 수평/수직 보정 스냅 적용 
-        let finalTarget = activeSnapPoint || mouseWorld;
-        finalTarget = getOrthogonalSnap(linearStart, finalTarget, activeSnapPoint);
-
-        const dist = Math.hypot(finalTarget.x - linearStart.x, finalTarget.y - linearStart.y);
-        if (dist > 3) { recordState(); elements.push({ type: currentTool, p1: linearStart, p2: { x: finalTarget.x, y: finalTarget.y }, color: currentColor }); }
+        const dist = Math.hypot(targetPos.x - linearStart.x, targetPos.y - linearStart.y);
+        if (dist > 3) { recordState(); elements.push({ type: currentTool, p1: linearStart, p2: { x: targetPos.x, y: targetPos.y }, color: currentColor }); }
         linearStart = null; render();
       }
-
-      activeDrawingPointerId = null;
     };
 
     window.addEventListener('pointerup', handlePointerUp);
@@ -1173,19 +1154,26 @@
 
     function setActiveTool(tool) {
       currentTool = tool;
+      
+      // 도구 버튼을 직접 누른 경우 임시 지우개 모드를 완전히 해제
+      tempEraserMode = false;
+      savedTool = null;
+      
       document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('btn-' + tool).classList.add('active');
+      
       compassStep = 0; compassInitialCenter = null; compassCenter = null; compassRadius = 0;
       isDrawingLinear = false; linearStart = null; isDrawingPen = false; currentPath = [];
       activeSnapPoint = null; clearSelection();
 
-      if (tool === 'pan') { document.getElementById('btn-pan').classList.add('active'); canvas.style.cursor = 'default'; updateStatus('포인터 모드: 화면 이동 및 배치된 이미지 조작'); }
-      else if (tool === 'lasso') { document.getElementById('btn-lasso').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('올가미: 영역을 둘러싸 선택하세요.'); }
-      else if (tool === 'eraser') { document.getElementById('btn-eraser').classList.add('active'); canvas.style.cursor = 'pointer'; updateStatus('지우개: 지울 요소를 터치하세요.'); }
-      else if (tool === 'pen') { document.getElementById('btn-pen').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('자유 곡선 펜: 자유롭게 그리세요.'); }
-      else if (tool === 'point') { document.getElementById('btn-point').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('점 찍기: 화면을 터치하여 점을 찍으세요.'); }
-      else if (tool === 'segment') { document.getElementById('btn-segment').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('선분 작도: 시작점부터 드래그하세요.'); }
-      else if (tool === 'line') { document.getElementById('btn-line').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('직선 작도: 두 점을 지나는 직선을 그립니다.'); }
-      else if (tool === 'compass') { document.getElementById('btn-compass').classList.add('active'); canvas.style.cursor = 'crosshair'; updateStatus('컴퍼스 [1단계]: 바늘을 꽂을 중심점을 터치하세요.'); }
+      if (tool === 'pan') { canvas.style.cursor = 'default'; updateStatus('포인터 모드: 화면 이동 및 배치된 이미지 조작'); }
+      else if (tool === 'lasso') { canvas.style.cursor = 'crosshair'; updateStatus('올가미: 영역을 둘러싸 선택하세요.'); }
+      else if (tool === 'eraser') { canvas.style.cursor = 'pointer'; updateStatus('지우개: 지울 요소를 터치하세요.'); }
+      else if (tool === 'pen') { canvas.style.cursor = 'crosshair'; updateStatus('자유 곡선 펜: 자유롭게 그리세요.'); }
+      else if (tool === 'point') { canvas.style.cursor = 'crosshair'; updateStatus('점 찍기: 화면을 터치하여 점을 찍으세요.'); }
+      else if (tool === 'segment') { canvas.style.cursor = 'crosshair'; updateStatus('선분 작도: 시작점부터 드래그하세요.'); }
+      else if (tool === 'line') { canvas.style.cursor = 'crosshair'; updateStatus('직선 작도: 두 점을 지나는 직선을 그립니다.'); }
+      else if (tool === 'compass') { canvas.style.cursor = 'crosshair'; updateStatus('컴퍼스 [1단계]: 바늘을 꽂을 중심점을 터치하세요.'); }
       render();
     }
 
