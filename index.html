@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>기하 작도 시뮬레이터 - 태블릿 최적화</title>
+  <title>기하 작도 시뮬레이터</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <style>
     * {
@@ -18,27 +18,29 @@
       overflow: hidden;
       background-color: #2b2b2b;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      touch-action: none; 
+      touch-action: none;
     }
 
     #canvas-container {
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
     }
 
     canvas {
       display: block;
+      width: 100%;
+      height: 100%;
       background-color: #ffffff;
       touch-action: none;
     }
 
-    /* 툴바 전체 크기 확대 */
+    /* 다시 원래 크기로 줄인 툴바 */
     .toolbar-container {
       position: absolute;
-      top: 24px;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 100;
@@ -47,24 +49,23 @@
     .toolbar {
       display: flex;
       align-items: center;
-      gap: 8px; /* 간격 넓힘 */
+      gap: 4px;
       background: #ffffff;
-      padding: 10px 20px; /* 패딩 넓힘 */
-      border-radius: 16px;
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+      padding: 6px 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
       border: 1px solid #e0e0e0;
     }
 
-    /* 태블릿 터치에 맞춘 버튼 크기 (기존 36px -> 54px) */
     .tool-btn {
-      width: 54px;
-      height: 54px;
+      width: 36px;
+      height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
       background: transparent;
-      border: 2px solid transparent;
-      border-radius: 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
       cursor: pointer;
       color: #4b5563;
       transition: all 0.15s ease;
@@ -82,45 +83,43 @@
     }
 
     .divider {
-      width: 2px;
-      height: 32px;
+      width: 1px;
+      height: 20px;
       background-color: #e5e7eb;
-      margin: 0 8px;
+      margin: 0 4px;
     }
 
-    /* 색상 선택기 확대 */
     .color-picker-wrapper {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       overflow: hidden;
-      border: 3px solid #e5e7eb;
+      border: 2px solid #e5e7eb;
       cursor: pointer;
     }
 
     #color-picker {
       cursor: pointer;
-      width: 60px;
-      height: 60px;
+      width: 44px;
+      height: 44px;
       border: none;
       padding: 0;
       background: none;
     }
 
-    /* 상태바 텍스트 크기 확대 */
     #status-bar {
       position: absolute;
-      bottom: 30px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(17, 24, 39, 0.88);
       color: #f9fafb;
-      font-size: 16px; /* 텍스트 크기 큼직하게 */
-      padding: 12px 24px;
-      border-radius: 30px;
+      font-size: 13px;
+      padding: 8px 18px;
+      border-radius: 20px;
       pointer-events: none;
       backdrop-filter: blur(4px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
@@ -136,45 +135,52 @@
 
   <div class="toolbar-container">
     <div class="toolbar">
-      <!-- 모든 SVG 아이콘의 크기를 18 -> 28로 키움 -->
+      <!-- 18x18로 다시 줄인 아이콘들 -->
       <button class="tool-btn active" id="btn-pan" title="포인터 (ESC)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 7 7-3 1 9 4-4-9 1-3z"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 7 7-3 1 9 4-4-9 1-3z"/></svg>
       </button>
       <button class="tool-btn" id="btn-lasso" title="올가미 (Ctrl+G)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22a5 5 0 0 1-2-4"/><path d="M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><circle cx="5" cy="19" r="2"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22a5 5 0 0 1-2-4"/><path d="M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><circle cx="5" cy="19" r="2"/></svg>
       </button>
       <button class="tool-btn" id="btn-eraser" title="대상 지우개 (Ctrl+R)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
       </button>
       <button class="tool-btn" id="btn-pen" title="자유 곡선 펜">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       </button>
       <button class="tool-btn" id="btn-point" title="점 찍기 (Ctrl+D)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/></svg>
       </button>
       <button class="tool-btn" id="btn-segment" title="선분 작도 (Ctrl+L)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><line x1="6.5" y1="17.5" x2="17.5" y2="6.5"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><line x1="6.5" y1="17.5" x2="17.5" y2="6.5"/></svg>
       </button>
       <button class="tool-btn" id="btn-line" title="무한 직선 작도 (Ctrl+S)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="3"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="3"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/></svg>
       </button>
       <button class="tool-btn" id="btn-compass" title="컴퍼스 (Ctrl+C)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="m11 6-6 15"/><path d="m13 6 6 15"/><path d="M7 16h10"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="m11 6-6 15"/><path d="m13 6 6 15"/><path d="M7 16h10"/></svg>
       </button>
       <div class="divider"></div>
       <div class="color-picker-wrapper" title="색상 선택">
         <input type="color" id="color-picker" value="#374151" />
       </div>
       <button class="tool-btn" id="btn-upload" title="이미지 삽입">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
       </button>
       <input type="file" id="image-input" accept="image/*" />
       <div class="divider"></div>
+      <button class="tool-btn" id="btn-zoom-in" title="확대">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      </button>
+      <button class="tool-btn" id="btn-zoom-out" title="축소">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      </button>
+      <div class="divider"></div>
       <button class="tool-btn" id="btn-undo" title="실행 취소 (Ctrl+Z)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
       </button>
       <button class="tool-btn" id="btn-clear" title="전체 지우기">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
       </button>
     </div>
   </div>
@@ -247,12 +253,20 @@
     let initialPanMid = null;
     let initialOrigin = { x: 0, y: 0 };
 
+    // S펜 우클릭/메뉴 호출 차단
+    window.addEventListener('contextmenu', e => e.preventDefault());
+
     function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const container = document.getElementById('canvas-container');
+      // 브라우저 렌더링 지연에 구애받지 않도록 컨테이너 크기로 강제 동기화 (15% 잘림 문제 해결)
+      canvas.width = container.offsetWidth;
+      canvas.height = container.offsetHeight;
       render();
     }
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 150));
+    document.addEventListener('DOMContentLoaded', resizeCanvas);
+    window.addEventListener('load', () => setTimeout(resizeCanvas, 150));
 
     function screenToWorld(sx, sy) {
       return { x: (sx - originX) / scale, y: (sy - originY) / scale };
@@ -368,7 +382,7 @@
     function findSnapPoint(worldPos) {
       if (['pan', 'lasso', 'eraser', 'pen'].includes(currentTool)) return null;
       const points = getAllPoints();
-      const snapThreshold = 18 / scale; // 스냅 영역 넓힘
+      const snapThreshold = 14 / scale; 
       let nearest = null;
       let minDist = snapThreshold;
       for (const pt of points) {
@@ -404,7 +418,7 @@
     }
 
     function findElementAt(worldPos) {
-      const threshold = 16 / scale; // 태블릿용 터치 판정 넓힘
+      const threshold = 10 / scale; 
       for (let i = elements.length - 1; i >= 0; i--) {
         const el = elements[i];
         if (el.type === 'point') {
@@ -477,7 +491,7 @@
           }
         }
       }
-      const padding = 16 / scale;
+      const padding = 12 / scale;
       return { x: minX - padding, y: minY - padding, w: (maxX - minX) + padding * 2, h: (maxY - minY) + padding * 2 };
     }
 
@@ -507,7 +521,7 @@
       ctx.beginPath(); ctx.moveTo(p1.x - ux * L, p1.y - uy * L); ctx.lineTo(p1.x + ux * L, p1.y + uy * L); ctx.stroke();
     }
 
-    function drawPoint(x, y, color = '#111827', radius = 6.5) { // 점 크기 키움
+    function drawPoint(x, y, color = '#111827', radius = 4.5) {
       ctx.save(); ctx.fillStyle = color; ctx.beginPath();
       ctx.arc(x, y, radius / scale, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
@@ -561,15 +575,15 @@
 
       for (const el of elements) {
         ctx.strokeStyle = el.color || '#374151'; ctx.fillStyle = el.color || '#1f2937'; 
-        ctx.lineWidth = (el.lineWidth || 2.5) / scale; // 기본 굵기 키움
+        ctx.lineWidth = (el.lineWidth || 1.8) / scale; 
         if (el.type === 'image') {
           if (el.imgObj && el.imgObj.complete) ctx.drawImage(el.imgObj, el.x, el.y, el.w, el.h);
           if (selectedImage === el) {
-            ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2 / scale; ctx.strokeRect(el.x, el.y, el.w, el.h);
-            ctx.fillStyle = '#2563eb'; ctx.fillRect(el.x + el.w - 8 / scale, el.y + el.h - 8 / scale, 16 / scale, 16 / scale); ctx.restore();
+            ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.5 / scale; ctx.strokeRect(el.x, el.y, el.w, el.h);
+            ctx.fillStyle = '#2563eb'; ctx.fillRect(el.x + el.w - 5 / scale, el.y + el.h - 5 / scale, 10 / scale, 10 / scale); ctx.restore();
           }
         } else if (el.type === 'point') {
-          drawPoint(el.x, el.y, el.color || '#111827', 6.5);
+          drawPoint(el.x, el.y, el.color || '#111827', 4.5);
         } else if (el.type === 'segment') {
           ctx.beginPath(); ctx.moveTo(el.p1.x, el.p1.y); ctx.lineTo(el.p2.x, el.p2.y); ctx.stroke();
           drawPoint(el.p1.x, el.p1.y, el.color); drawPoint(el.p2.x, el.p2.y, el.color);
@@ -589,7 +603,7 @@
       }
 
       if (currentTool === 'pen' && isDrawingPen && currentPath.length > 1) {
-        ctx.strokeStyle = currentColor; ctx.lineWidth = 3 / scale;
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
         ctx.beginPath(); ctx.moveTo(currentPath[0].x, currentPath[0].y);
         for (let i = 1; i < currentPath.length; i++) ctx.lineTo(currentPath[i].x, currentPath[i].y);
         ctx.stroke();
@@ -598,37 +612,37 @@
       const activePos = activeSnapPoint || mouseWorld;
 
       if (currentTool === 'segment' && isDrawingLinear && linearStart) {
-        ctx.strokeStyle = currentColor; ctx.lineWidth = 2.5 / scale;
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
         ctx.beginPath(); ctx.moveTo(linearStart.x, linearStart.y); ctx.lineTo(activePos.x, activePos.y); ctx.stroke();
         drawPoint(linearStart.x, linearStart.y, currentColor);
       }
 
       if (currentTool === 'line' && isDrawingLinear && linearStart) {
-        ctx.strokeStyle = currentColor; ctx.lineWidth = 2.5 / scale;
+        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
         drawInfiniteLine(linearStart, activePos);
         drawPoint(linearStart.x, linearStart.y, currentColor);
       }
 
       if (currentTool === 'compass') {
         if (compassStep === 0) {
-          drawPoint(activePos.x, activePos.y, '#2563eb', 7);
+          drawPoint(activePos.x, activePos.y, '#2563eb', 5);
         } else if (compassStep === 1 && compassInitialCenter) {
-          ctx.save(); ctx.strokeStyle = 'rgba(37, 99, 235, 0.4)'; ctx.setLineDash([6 / scale, 6 / scale]);
+          ctx.save(); ctx.strokeStyle = 'rgba(37, 99, 235, 0.4)'; ctx.setLineDash([4 / scale, 4 / scale]);
           ctx.beginPath(); ctx.moveTo(compassInitialCenter.x, compassInitialCenter.y); ctx.lineTo(activePos.x, activePos.y); ctx.stroke();
           const r = Math.hypot(activePos.x - compassInitialCenter.x, activePos.y - compassInitialCenter.y);
           ctx.beginPath(); ctx.arc(compassInitialCenter.x, compassInitialCenter.y, r, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-          drawPoint(compassInitialCenter.x, compassInitialCenter.y, '#2563eb', 6.5); drawPoint(activePos.x, activePos.y, '#2563eb', 6.5);
+          drawPoint(compassInitialCenter.x, compassInitialCenter.y, '#2563eb', 4.5); drawPoint(activePos.x, activePos.y, '#2563eb', 4.5);
         } else if (compassStep === 2 && compassRadius > 0) {
           const curCenter = compassCenter || activePos;
-          ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2 / scale; ctx.setLineDash([8 / scale, 6 / scale]);
+          ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.6 / scale; ctx.setLineDash([6 / scale, 4 / scale]);
           ctx.beginPath(); ctx.arc(curCenter.x, curCenter.y, compassRadius, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-          drawPoint(curCenter.x, curCenter.y, '#2563eb', 7);
+          drawPoint(curCenter.x, curCenter.y, '#2563eb', 5);
         } else if (compassStep >= 3 && compassCenter) {
-          ctx.save(); ctx.strokeStyle = 'rgba(156, 163, 175, 0.5)'; ctx.setLineDash([6 / scale, 6 / scale]);
+          ctx.save(); ctx.strokeStyle = 'rgba(156, 163, 175, 0.5)'; ctx.setLineDash([4 / scale, 4 / scale]);
           ctx.beginPath(); ctx.arc(compassCenter.x, compassCenter.y, compassRadius, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-          drawPoint(compassCenter.x, compassCenter.y, '#2563eb', 6.5);
+          drawPoint(compassCenter.x, compassCenter.y, '#2563eb', 4.5);
           if (compassStep === 4) {
-            ctx.save(); ctx.strokeStyle = currentColor; ctx.lineWidth = 3 / scale; ctx.beginPath();
+            ctx.save(); ctx.strokeStyle = currentColor; ctx.lineWidth = 2.2 / scale; ctx.beginPath();
             const ccw = compassDrawEndAngle < compassDrawStartAngle;
             ctx.arc(compassCenter.x, compassCenter.y, compassRadius, compassDrawStartAngle, compassDrawEndAngle, ccw);
             ctx.stroke(); ctx.restore();
@@ -642,7 +656,7 @@
       }
 
       if (currentTool === 'lasso' && isSelectingLasso && lassoPolygon.length > 1) {
-        ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2 / scale; ctx.setLineDash([6 / scale, 6 / scale]);
+        ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.5 / scale; ctx.setLineDash([4 / scale, 4 / scale]);
         ctx.beginPath(); ctx.moveTo(lassoPolygon[0].x, lassoPolygon[0].y);
         for (let i = 1; i < lassoPolygon.length; i++) ctx.lineTo(lassoPolygon[i].x, lassoPolygon[i].y);
         ctx.stroke(); ctx.fillStyle = 'rgba(37, 99, 235, 0.08)'; ctx.fill(); ctx.restore();
@@ -655,21 +669,21 @@
             ctx.translate(transformCenter.x, transformCenter.y); ctx.rotate(selectionRotation); ctx.translate(-transformCenter.x, -transformCenter.y);
             bx = originalSelectedBounds.x; by = originalSelectedBounds.y; bw = originalSelectedBounds.w; bh = originalSelectedBounds.h;
         }
-        ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2 / scale; ctx.setLineDash([6 / scale, 6 / scale]);
+        ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.5 / scale; ctx.setLineDash([4 / scale, 4 / scale]);
         ctx.strokeRect(bx, by, bw, bh); ctx.setLineDash([]);
-        const hSize = 14 / scale; // 핸들 크기 키움
+        const hSize = 8 / scale; 
         ctx.fillStyle = '#2563eb'; ctx.fillRect(bx + bw - hSize / 2, by + bh - hSize / 2, hSize, hSize);
-        const rotHandleX = bx + bw / 2, rotHandleY = by - 36 / scale; // 회전 핸들 거리 늘림
+        const rotHandleX = bx + bw / 2, rotHandleY = by - 24 / scale; 
         ctx.beginPath(); ctx.moveTo(bx + bw / 2, by); ctx.lineTo(rotHandleX, rotHandleY); ctx.stroke();
-        ctx.beginPath(); ctx.arc(rotHandleX, rotHandleY, 10 / scale, 0, Math.PI * 2); ctx.fillStyle = '#10b981'; ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(rotHandleX, rotHandleY, 6 / scale, 0, Math.PI * 2); ctx.fillStyle = '#10b981'; ctx.fill(); ctx.stroke();
         ctx.restore();
       }
 
       if (currentTool === 'eraser') {
         const hoverIdx = findElementAt(mouseWorld);
         if (hoverIdx !== -1) {
-          ctx.save(); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 6 / scale; const el = elements[hoverIdx];
-          if (el.type === 'point') drawPoint(el.x, el.y, '#ef4444', 8);
+          ctx.save(); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 4 / scale; const el = elements[hoverIdx];
+          if (el.type === 'point') drawPoint(el.x, el.y, '#ef4444', 6);
           else if (el.type === 'segment') { ctx.beginPath(); ctx.moveTo(el.p1.x, el.p1.y); ctx.lineTo(el.p2.x, el.p2.y); ctx.stroke(); }
           else if (el.type === 'line') drawInfiniteLine(el.p1, el.p2);
           else if (el.type === 'arc') { ctx.beginPath(); ctx.arc(el.center.x, el.center.y, el.radius, el.startAngle, el.endAngle, false); ctx.stroke(); }
@@ -681,13 +695,13 @@
       if (activeSnapPoint && !['pan', 'lasso', 'eraser', 'pen'].includes(currentTool)) {
         ctx.save();
         if (activeSnapPoint.isIntersection) {
-          ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.5 / scale; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 10 / scale, 0, Math.PI * 2); ctx.stroke();
-          const crossSize = 14 / scale; ctx.beginPath(); ctx.moveTo(activeSnapPoint.x - crossSize, activeSnapPoint.y); ctx.lineTo(activeSnapPoint.x + crossSize, activeSnapPoint.y);
+          ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.stroke();
+          const crossSize = 11 / scale; ctx.beginPath(); ctx.moveTo(activeSnapPoint.x - crossSize, activeSnapPoint.y); ctx.lineTo(activeSnapPoint.x + crossSize, activeSnapPoint.y);
           ctx.moveTo(activeSnapPoint.x, activeSnapPoint.y - crossSize); ctx.lineTo(activeSnapPoint.x, activeSnapPoint.y + crossSize); ctx.stroke();
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.2)'; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 10 / scale, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.2)'; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.fill();
         } else {
-          ctx.strokeStyle = currentColor; ctx.lineWidth = 2.5 / scale; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 10 / scale, 0, Math.PI * 2); ctx.stroke();
-          ctx.fillStyle = 'rgba(37, 99, 235, 0.2)'; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 10 / scale, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = 'rgba(37, 99, 235, 0.2)'; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.fill();
         }
         ctx.restore();
       }
@@ -705,6 +719,14 @@
     canvas.addEventListener('pointerdown', (e) => {
       canvas.setPointerCapture(e.pointerId);
       activePointers.set(e.pointerId, e);
+
+      // S펜 측면 버튼 누른 채 터치하거나, 마우스 우클릭 시 임시 지우개 모드 발동
+      if ((e.buttons & 2) || (e.buttons & 32)) {
+        const rawWorld = screenToWorld(e.clientX, e.clientY);
+        const hitIdx = findElementAt(rawWorld);
+        if (hitIdx !== -1) { recordState(); elements.splice(hitIdx, 1); render(); }
+        return; // 정상적인 작도 로직은 실행하지 않음
+      }
 
       if (activePointers.size === 2) {
         cancelCurrentAction();
@@ -726,7 +748,7 @@
           const el = elements[i];
           if (el.type === 'image') {
             const handleDist = Math.hypot(rawWorld.x - (el.x + el.w), rawWorld.y - (el.y + el.h));
-            if (handleDist <= 18 / scale) { selectedImage = el; isResizingImage = true; return; }
+            if (handleDist <= 12 / scale) { selectedImage = el; isResizingImage = true; return; }
             if (rawWorld.x >= el.x && rawWorld.x <= el.x + el.w && rawWorld.y >= el.y && rawWorld.y <= el.y + el.h) { hit = el; break; }
           }
         }
@@ -745,8 +767,8 @@
       else if (currentTool === 'lasso') {
         if (selectionBox) {
           const cx = selectionBox.x + selectionBox.w / 2; const cy = selectionBox.y + selectionBox.h / 2;
-          const rotHandleX = cx; const rotHandleY = selectionBox.y - 36 / scale;
-          if (Math.hypot(rawWorld.x - rotHandleX, rawWorld.y - rotHandleY) <= 18 / scale) {
+          const rotHandleX = cx; const rotHandleY = selectionBox.y - 24 / scale;
+          if (Math.hypot(rawWorld.x - rotHandleX, rawWorld.y - rotHandleY) <= 12 / scale) {
             recordState(); isTransformingSelection = true; transformMode = 'rotate';
             transformStartMouse = { ...rawWorld }; originalSelectedBounds = { ...selectionBox };
             initialElementsState = JSON.parse(JSON.stringify(selectedElements));
@@ -754,7 +776,7 @@
             selectionRotation = 0; return;
           }
           const handleX = selectionBox.x + selectionBox.w; const handleY = selectionBox.y + selectionBox.h;
-          if (Math.hypot(rawWorld.x - handleX, rawWorld.y - handleY) <= 18 / scale) {
+          if (Math.hypot(rawWorld.x - handleX, rawWorld.y - handleY) <= 12 / scale) {
             recordState(); isTransformingSelection = true; transformMode = 'resize';
             transformStartMouse = { ...rawWorld }; originalSelectedBounds = { ...selectionBox };
             initialElementsState = JSON.parse(JSON.stringify(selectedElements)); return;
@@ -794,6 +816,14 @@
     window.addEventListener('pointermove', (e) => {
       if (activePointers.has(e.pointerId)) {
         activePointers.set(e.pointerId, e);
+      }
+
+      // 펜의 측면 버튼을 누른 채로 화면을 문지르면 지우개 작동
+      if ((e.buttons & 2) || (e.buttons & 32)) {
+        const rawWorld = screenToWorld(e.clientX, e.clientY);
+        const hitIdx = findElementAt(rawWorld);
+        if (hitIdx !== -1) { recordState(); elements.splice(hitIdx, 1); render(); }
+        return;
       }
 
       if (activePointers.size === 2) {
@@ -941,7 +971,7 @@
       }
       else if (currentTool === 'pen' && isDrawingPen) {
         isDrawingPen = false;
-        if (currentPath.length > 1) { recordState(); elements.push({ type: 'path', points: currentPath, color: currentColor, lineWidth: 3 }); }
+        if (currentPath.length > 1) { recordState(); elements.push({ type: 'path', points: currentPath, color: currentColor, lineWidth: 2 }); }
         currentPath = []; render();
       }
       else if ((currentTool === 'segment' || currentTool === 'line') && isDrawingLinear) {
@@ -1047,6 +1077,7 @@
     document.getElementById('btn-undo').onclick = undo;
     document.getElementById('btn-clear').onclick = () => { recordState(); elements = []; selectedImage = null; clearSelection(); render(); };
 
+    // 첫 실행 시 화면 맞춰주기
     resizeCanvas();
     setActiveTool('pan');
   </script>
