@@ -125,51 +125,12 @@
       white-space: nowrap;
     }
 
-    /* 왼손용 빠른 지우개 버튼 */
-    #quick-eraser-btn {
-      position: absolute;
-      bottom: 30px;
-      left: 30px;
-      width: 72px;
-      height: 72px;
-      background-color: #ef4444;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      font-size: 14px;
-      font-weight: bold;
-      line-height: 1.2;
-      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
-      cursor: pointer;
-      z-index: 200;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.1s, background-color 0.1s;
-      touch-action: none;
-    }
-    #quick-eraser-btn:active {
-      transform: scale(0.92);
-      background-color: #dc2626;
-    }
-    #quick-eraser-btn small {
-      font-size: 10px;
-      font-weight: normal;
-      opacity: 0.9;
-    }
-
     #image-input {
       display: none;
     }
   </style>
 </head>
 <body>
-
-  <!-- 왼손 빠른 지우개 버튼 -->
-  <button id="quick-eraser-btn">
-    지우개<br><small>누른 채로</small>
-  </button>
 
   <div class="toolbar-container">
     <div class="toolbar">
@@ -179,9 +140,12 @@
       <button class="tool-btn" id="btn-lasso" title="올가미 (Ctrl+G)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22a5 5 0 0 1-2-4"/><path d="M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><circle cx="5" cy="19" r="2"/></svg>
       </button>
-      <button class="tool-btn" id="btn-eraser" title="대상 지우개 (Ctrl+R)">
+      <button class="tool-btn" id="btn-eraser" title="대상 지우개 (S펜 측면 버튼 유지)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
       </button>
+      
+      <div class="divider"></div>
+
       <button class="tool-btn" id="btn-pen" title="자유 곡선 펜">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       </button>
@@ -197,7 +161,25 @@
       <button class="tool-btn" id="btn-compass" title="컴퍼스 (Ctrl+C)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="m11 6-6 15"/><path d="m13 6 6 15"/><path d="M7 16h10"/></svg>
       </button>
+
       <div class="divider"></div>
+
+      <!-- 새로 추가된 측정도구 (자, 각도기) -->
+      <button class="tool-btn" id="btn-ruler" title="자 (길이 측정)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.54 11.46l-9 9a2 2 0 0 1-2.83 0l-7.25-7.25a2 2 0 0 1 0-2.83l9-9a2 2 0 0 1 2.83 0l7.25 7.25a2 2 0 0 1 0 2.83z"/>
+          <line x1="14.5" y1="5.5" x2="16.5" y2="7.5"/><line x1="10.5" y1="9.5" x2="12.5" y2="11.5"/><line x1="6.5" y1="13.5" x2="8.5" y2="15.5"/>
+        </svg>
+      </button>
+      <button class="tool-btn" id="btn-protractor" title="각도기 (각도 측정)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 15A10 10 0 0 0 2 15"/><line x1="2" y1="15" x2="22" y2="15"/><circle cx="12" cy="15" r="2"/>
+          <line x1="12" y1="13" x2="12" y2="15"/><line x1="7" y1="6" x2="8.5" y2="8"/><line x1="17" y1="6" x2="15.5" y2="8"/>
+        </svg>
+      </button>
+
+      <div class="divider"></div>
+
       <div class="color-picker-wrapper" title="색상 선택">
         <input type="color" id="color-picker" value="#374151" />
       </div>
@@ -205,14 +187,9 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
       </button>
       <input type="file" id="image-input" accept="image/*" />
+
       <div class="divider"></div>
-      <button class="tool-btn" id="btn-zoom-in" title="확대">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-      </button>
-      <button class="tool-btn" id="btn-zoom-out" title="축소">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-      </button>
-      <div class="divider"></div>
+
       <button class="tool-btn" id="btn-undo" title="실행 취소 (Ctrl+Z)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
       </button>
@@ -249,6 +226,12 @@
     let compassCurrentAngle = 0;
     let compassDrawStartAngle = 0;
     let compassDrawEndAngle = 0;
+
+    let protractorStep = 0;
+    let protractorCenter = null;
+    let protractorRadius = 0;
+    let protractorStartAngle = 0;
+    let protractorCurrentAngle = 0;
 
     let isDrawingLinear = false;
     let linearStart = null;
@@ -292,7 +275,6 @@
 
     let tempEraserMode = false;
     let savedTool = null;
-    let buttonTriggeredEraser = false;
 
     window.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -324,9 +306,6 @@
       return a >= s || a <= e;
     }
 
-    // ---------------------------------------------------------
-    // 수평, 수직 스마트 보정 로직 (Ortho Snap)
-    // ---------------------------------------------------------
     function getOrthoTarget(start, current) {
       const dx = current.x - start.x;
       const dy = current.y - start.y;
@@ -334,21 +313,13 @@
       if (dist === 0) return current;
 
       let angle = Math.atan2(dy, dx);
-      // 가장 가까운 90도(PI/2) 단위 각도 찾기
       let orthoAngle = Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
-      
       let diff = Math.abs(angle - orthoAngle);
-      if (diff > Math.PI) diff = Math.PI * 2 - diff; // -PI와 PI 경계 보정
+      if (diff > Math.PI) diff = Math.PI * 2 - diff; 
 
-      // 약 4.5도(0.08 라디안) 이내로 들어오면 수직/수평으로 강제 고정
       if (diff < 0.08) {
-        if (Math.abs(Math.cos(orthoAngle)) > 0.5) { 
-          // 수평 (가로)
-          return { x: current.x, y: start.y };
-        } else { 
-          // 수직 (세로)
-          return { x: start.x, y: current.y };
-        }
+        if (Math.abs(Math.cos(orthoAngle)) > 0.5) return { x: current.x, y: start.y };
+        else return { x: start.x, y: current.y };
       }
       return current;
     }
@@ -360,8 +331,8 @@
       if (Math.abs(denom) < 1e-9) return null;
       const t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / denom;
       const u = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / denom;
-      const tValid = l1.type === 'line' || (t >= 0 && t <= 1);
-      const uValid = l2.type === 'line' || (u >= 0 && u <= 1);
+      const tValid = (l1.type === 'line' || l1.type === 'ruler') || (t >= 0 && t <= 1);
+      const uValid = (l2.type === 'line' || l2.type === 'ruler') || (u >= 0 && u <= 1);
       if (tValid && uValid) return { x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) };
       return null;
     }
@@ -380,7 +351,7 @@
       const t2 = (-b + discriminant) / (2 * a);
       const pts = [];
       [t1, t2].forEach(t => {
-        const tValid = linear.type === 'line' || (t >= 0 && t <= 1);
+        const tValid = (linear.type === 'line' || linear.type === 'ruler') || (t >= 0 && t <= 1);
         if (tValid) {
           const ix = p1.x + t * dx; const iy = p1.y + t * dy;
           const ang = Math.atan2(iy - arc.center.y, ix - arc.center.x);
@@ -416,12 +387,15 @@
       for (let i = 0; i < elements.length; i++) {
         for (let j = i + 1; j < elements.length; j++) {
           const e1 = elements[i]; const e2 = elements[j];
-          if ((e1.type === 'segment' || e1.type === 'line') && (e2.type === 'segment' || e2.type === 'line')) {
+          const isLinear1 = ['segment', 'line', 'ruler'].includes(e1.type);
+          const isLinear2 = ['segment', 'line', 'ruler'].includes(e2.type);
+          
+          if (isLinear1 && isLinear2) {
             const pt = linearIntersection(e1, e2);
             if (pt) inters.push(pt);
-          } else if ((e1.type === 'segment' || e1.type === 'line') && e2.type === 'arc') {
+          } else if (isLinear1 && e2.type === 'arc') {
             inters.push(...linearArcIntersection(e1, e2));
-          } else if (e1.type === 'arc' && (e2.type === 'segment' || e2.type === 'line')) {
+          } else if (e1.type === 'arc' && isLinear2) {
             inters.push(...linearArcIntersection(e2, e1));
           } else if (e1.type === 'arc' && e2.type === 'arc') {
             inters.push(...arcArcIntersection(e1, e2));
@@ -435,10 +409,10 @@
       const pts = [];
       for (const el of elements) {
         if (el.type === 'point') pts.push({ x: el.x, y: el.y, isIntersection: false });
-        else if (el.type === 'segment' || el.type === 'line') {
+        else if (['segment', 'line', 'ruler'].includes(el.type)) {
           pts.push({ x: el.p1.x, y: el.p1.y, isIntersection: false });
           pts.push({ x: el.p2.x, y: el.p2.y, isIntersection: false });
-        } else if (el.type === 'arc') {
+        } else if (el.type === 'arc' || el.type === 'protractor') {
           pts.push({ x: el.center.x, y: el.center.y, isIntersection: false });
         }
       }
@@ -505,7 +479,7 @@
 
       for (const el of elements) {
         let proj = null;
-        if (el.type === 'segment') proj = projectPointToSegment(worldPos, el.p1, el.p2);
+        if (el.type === 'segment' || el.type === 'ruler') proj = projectPointToSegment(worldPos, el.p1, el.p2);
         else if (el.type === 'line') proj = projectPointToLine(worldPos, el.p1, el.p2);
         else if (el.type === 'arc') proj = projectPointToArc(worldPos, el);
         else if (el.type === 'path') proj = projectPointToPath(worldPos, el.points);
@@ -518,7 +492,6 @@
           }
         }
       }
-
       return nearestOnLine;
     }
 
@@ -553,7 +526,7 @@
         const el = elements[i];
         if (el.type === 'point') {
           if (Math.hypot(el.x - worldPos.x, el.y - worldPos.y) <= threshold + 2 / scale) return i;
-        } else if (el.type === 'segment') {
+        } else if (el.type === 'segment' || el.type === 'ruler') {
           if (distToSegment(worldPos, el.p1, el.p2) <= threshold) return i;
         } else if (el.type === 'line') {
           if (distToInfiniteLine(worldPos, el.p1, el.p2) <= threshold) return i;
@@ -563,6 +536,8 @@
             const ang = Math.atan2(worldPos.y - el.center.y, worldPos.x - el.center.x);
             if (isAngleOnArc(ang, el.startAngle, el.endAngle)) return i;
           }
+        } else if (el.type === 'protractor') {
+          if (Math.hypot(el.center.x - worldPos.x, el.center.y - worldPos.y) <= threshold + 10/scale) return i;
         } else if (el.type === 'path') {
           for (let k = 0; k < el.points.length - 1; k++) {
             if (distToSegment(worldPos, el.points[k], el.points[k + 1]) <= threshold) return i;
@@ -608,10 +583,13 @@
         if (el.type === 'point') {
           minX = Math.min(minX, el.x); maxX = Math.max(maxX, el.x);
           minY = Math.min(minY, el.y); maxY = Math.max(maxY, el.y);
-        } else if (el.type === 'segment' || el.type === 'line') {
+        } else if (el.type === 'segment' || el.type === 'line' || el.type === 'ruler') {
           minX = Math.min(minX, el.p1.x, el.p2.x); maxX = Math.max(maxX, el.p1.x, el.p2.x);
           minY = Math.min(minY, el.p1.y, el.p2.y); maxY = Math.max(maxY, el.p1.y, el.p2.y);
         } else if (el.type === 'arc') {
+          minX = Math.min(minX, el.center.x - el.radius); maxX = Math.max(maxX, el.center.x + el.radius);
+          minY = Math.min(minY, el.center.y - el.radius); maxY = Math.max(maxY, el.center.y + el.radius);
+        } else if (el.type === 'protractor') {
           minX = Math.min(minX, el.center.x - el.radius); maxX = Math.max(maxX, el.center.x + el.radius);
           minY = Math.min(minY, el.center.y - el.radius); maxY = Math.max(maxY, el.center.y + el.radius);
         } else if (el.type === 'path') {
@@ -671,13 +649,10 @@
       ctx.save();
       ctx.shadowColor = 'rgba(0, 0, 0, 0.2)'; ctx.shadowBlur = 10 / scale;
       ctx.shadowOffsetX = 3 / scale; ctx.shadowOffsetY = 4 / scale;
-
       ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 4.5 / scale; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(hingeX, hingeY); ctx.lineTo(center.x, center.y); ctx.stroke();
-
       ctx.strokeStyle = '#374151'; ctx.lineWidth = 2 / scale;
       ctx.beginPath(); ctx.moveTo(center.x + (hingeX - center.x) * 0.15, center.y + (hingeY - center.y) * 0.15); ctx.lineTo(center.x, center.y); ctx.stroke();
-
       ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 5.5 / scale;
       ctx.beginPath(); ctx.moveTo(hingeX, hingeY); ctx.lineTo(pencilPos.x, pencilPos.y); ctx.stroke();
 
@@ -689,13 +664,61 @@
       ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4 / scale;
       ctx.beginPath(); ctx.moveTo(pBackX, pBackY); ctx.lineTo(pTipX, pTipY); ctx.stroke();
       ctx.fillStyle = '#111827'; ctx.beginPath(); ctx.arc(pTipX, pTipY, 2.2 / scale, 0, Math.PI * 2); ctx.fill();
-
       ctx.fillStyle = '#4b5563'; ctx.beginPath(); ctx.arc(hingeX, hingeY, 6.5 / scale, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#9ca3af'; ctx.beginPath(); ctx.arc(hingeX, hingeY, 3 / scale, 0, Math.PI * 2); ctx.fill();
-
       ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 3.5 / scale;
       ctx.beginPath(); ctx.moveTo(hingeX, hingeY); ctx.lineTo(hingeX + nx * 14 / scale, hingeY + ny * 14 / scale); ctx.stroke();
       ctx.restore(); ctx.restore();
+    }
+
+    function drawRulerElement(p1, p2, color) {
+      ctx.strokeStyle = color; ctx.lineWidth = 2 / scale; ctx.setLineDash([5 / scale, 5 / scale]);
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); ctx.setLineDash([]);
+      drawPoint(p1.x, p1.y, color, 4.5); drawPoint(p2.x, p2.y, color, 4.5);
+
+      const distPx = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const distCm = (distPx / 40).toFixed(1);
+      const midX = (p1.x + p2.x) / 2;
+      const midY = (p1.y + p2.y) / 2;
+      
+      ctx.save();
+      ctx.translate(midX, midY);
+      let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+      if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
+      ctx.rotate(angle);
+      ctx.fillStyle = color;
+      ctx.font = `bold ${16 / scale}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(`${distCm} cm`, 0, -6 / scale);
+      ctx.restore();
+    }
+
+    function drawProtractorElement(center, radius, startAngle, endAngle, color) {
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5 / scale; ctx.setLineDash([4 / scale, 4 / scale]);
+      ctx.beginPath(); ctx.moveTo(center.x, center.y); 
+      ctx.lineTo(center.x + radius * Math.cos(startAngle), center.y + radius * Math.sin(startAngle));
+      ctx.moveTo(center.x, center.y); 
+      ctx.lineTo(center.x + radius * Math.cos(endAngle), center.y + radius * Math.sin(endAngle));
+      ctx.stroke(); ctx.setLineDash([]);
+
+      let diff = endAngle - startAngle;
+      while (diff <= -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      let ccw = diff < 0;
+
+      ctx.beginPath(); ctx.arc(center.x, center.y, radius, startAngle, endAngle, ccw); ctx.stroke();
+
+      const midAngle = startAngle + diff / 2;
+      const textX = center.x + (radius + 24 / scale) * Math.cos(midAngle);
+      const textY = center.y + (radius + 24 / scale) * Math.sin(midAngle);
+      const deg = Math.abs(diff * 180 / Math.PI).toFixed(1);
+
+      ctx.fillStyle = color;
+      ctx.font = `bold ${16 / scale}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`${deg}°`, textX, textY);
+      
+      drawPoint(center.x, center.y, color, 5);
     }
 
     function render() {
@@ -706,6 +729,7 @@
       for (const el of elements) {
         ctx.strokeStyle = el.color || '#374151'; ctx.fillStyle = el.color || '#1f2937'; 
         ctx.lineWidth = (el.lineWidth || 1.8) / scale; 
+        
         if (el.type === 'image') {
           if (el.imgObj && el.imgObj.complete) ctx.drawImage(el.imgObj, el.x, el.y, el.w, el.h);
           if (selectedImage === el) {
@@ -729,6 +753,10 @@
             for (let i = 1; i < el.points.length; i++) ctx.lineTo(el.points[i].x, el.points[i].y);
             ctx.stroke();
           }
+        } else if (el.type === 'ruler') {
+          drawRulerElement(el.p1, el.p2, el.color);
+        } else if (el.type === 'protractor') {
+          drawProtractorElement(el.center, el.radius, el.startAngle, el.endAngle, el.color);
         }
       }
 
@@ -741,12 +769,15 @@
 
       const activePos = activeSnapPoint || mouseWorld;
 
-      // 수평/수직 보정을 적용한 시각적 프리뷰
-      if (currentTool === 'segment' && isDrawingLinear && linearStart) {
+      if ((currentTool === 'segment' || currentTool === 'ruler') && isDrawingLinear && linearStart) {
         const targetPos = getOrthoTarget(linearStart, activePos);
-        ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
-        ctx.beginPath(); ctx.moveTo(linearStart.x, linearStart.y); ctx.lineTo(targetPos.x, targetPos.y); ctx.stroke();
-        drawPoint(linearStart.x, linearStart.y, currentColor);
+        if (currentTool === 'ruler') {
+          drawRulerElement(linearStart, targetPos, currentColor);
+        } else {
+          ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale;
+          ctx.beginPath(); ctx.moveTo(linearStart.x, linearStart.y); ctx.lineTo(targetPos.x, targetPos.y); ctx.stroke();
+          drawPoint(linearStart.x, linearStart.y, currentColor);
+        }
       }
 
       if (currentTool === 'line' && isDrawingLinear && linearStart) {
@@ -788,6 +819,20 @@
         }
       }
 
+      if (currentTool === 'protractor') {
+        if (protractorStep === 0) {
+          drawPoint(activePos.x, activePos.y, '#10b981', 5);
+        } else if (protractorStep === 1 && protractorCenter) {
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)'; ctx.setLineDash([4 / scale, 4 / scale]);
+          ctx.beginPath(); ctx.moveTo(protractorCenter.x, protractorCenter.y); ctx.lineTo(activePos.x, activePos.y); ctx.stroke();
+          ctx.setLineDash([]);
+          drawPoint(protractorCenter.x, protractorCenter.y, '#10b981', 4.5);
+          drawPoint(activePos.x, activePos.y, '#10b981', 4.5);
+        } else if (protractorStep === 2 && protractorCenter) {
+          drawProtractorElement(protractorCenter, protractorRadius, protractorStartAngle, protractorCurrentAngle, currentColor);
+        }
+      }
+
       if (currentTool === 'lasso' && isSelectingLasso && lassoPolygon.length > 1) {
         ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.5 / scale; ctx.setLineDash([4 / scale, 4 / scale]);
         ctx.beginPath(); ctx.moveTo(lassoPolygon[0].x, lassoPolygon[0].y);
@@ -820,6 +865,8 @@
           else if (el.type === 'segment') { ctx.beginPath(); ctx.moveTo(el.p1.x, el.p1.y); ctx.lineTo(el.p2.x, el.p2.y); ctx.stroke(); }
           else if (el.type === 'line') drawInfiniteLine(el.p1, el.p2);
           else if (el.type === 'arc') { ctx.beginPath(); ctx.arc(el.center.x, el.center.y, el.radius, el.startAngle, el.endAngle, false); ctx.stroke(); }
+          else if (el.type === 'ruler') { ctx.beginPath(); ctx.moveTo(el.p1.x, el.p1.y); ctx.lineTo(el.p2.x, el.p2.y); ctx.stroke(); }
+          else if (el.type === 'protractor') { ctx.beginPath(); ctx.arc(el.center.x, el.center.y, el.radius, 0, Math.PI * 2); ctx.stroke(); }
           else if (el.type === 'image') ctx.strokeRect(el.x, el.y, el.w, el.h);
           ctx.restore();
         }
@@ -841,69 +888,18 @@
       ctx.restore();
     }
 
-    function cancelCurrentAction() {
-      isDrawingLinear = false; linearStart = null;
-      isDrawingPen = false; currentPath = [];
-      isPanning = false; isDraggingImage = false; isResizingImage = false;
-      if (isSelectingLasso) { isSelectingLasso = false; lassoPolygon = []; }
-      if (isTransformingSelection) { isTransformingSelection = false; }
-    }
-
-    // 왼손 플로팅 지우개 이벤트 연결
-    const quickEraserBtn = document.getElementById('quick-eraser-btn');
-
-    const activateEraser = (e) => {
-      e.preventDefault();
-      if (!tempEraserMode) {
-        cancelCurrentAction();
-        tempEraserMode = true;
-        buttonTriggeredEraser = true;
-        savedTool = currentTool;
-        currentTool = 'eraser';
-        
-        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-        const eraserBtn = document.getElementById('btn-eraser');
-        if (eraserBtn) eraserBtn.classList.add('active');
-        
-        canvas.style.cursor = 'pointer';
-        updateStatus('임시 지우개 모드: 손을 떼면 원래 도구로 돌아갑니다.');
-      }
-    };
-
-    const deactivateEraser = (e) => {
-      e.preventDefault();
-      if (tempEraserMode && buttonTriggeredEraser) {
-        tempEraserMode = false;
-        buttonTriggeredEraser = false;
-        currentTool = savedTool;
-        
-        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-        const restoredBtn = document.getElementById('btn-' + currentTool);
-        if (restoredBtn) restoredBtn.classList.add('active');
-        
-        if (currentTool === 'pan') { canvas.style.cursor = 'default'; updateStatus('포인터 모드: 화면 이동 및 배치된 이미지 조작'); }
-        else if (currentTool === 'lasso') { canvas.style.cursor = 'crosshair'; updateStatus('올가미: 영역을 둘러싸 선택하세요.'); }
-        else if (currentTool === 'eraser') { canvas.style.cursor = 'pointer'; updateStatus('지우개: 지울 요소를 터치하세요.'); }
-        else if (currentTool === 'pen') { canvas.style.cursor = 'crosshair'; updateStatus('자유 곡선 펜: 자유롭게 그리세요.'); }
-        else if (currentTool === 'point') { canvas.style.cursor = 'crosshair'; updateStatus('점 찍기: 화면을 터치하여 점을 찍으세요.'); }
-        else if (currentTool === 'segment') { canvas.style.cursor = 'crosshair'; updateStatus('선분 작도: 시작점부터 드래그하세요.'); }
-        else if (currentTool === 'line') { canvas.style.cursor = 'crosshair'; updateStatus('직선 작도: 두 점을 지나는 직선을 그립니다.'); }
-        else if (currentTool === 'compass') { canvas.style.cursor = 'crosshair'; updateStatus('컴퍼스 [1단계]: 바늘을 꽂을 중심점을 터치하세요.'); }
-      }
-    };
-
-    quickEraserBtn.addEventListener('pointerdown', activateEraser);
-    quickEraserBtn.addEventListener('pointerup', deactivateEraser);
-    quickEraserBtn.addEventListener('pointerleave', deactivateEraser);
-
     // S펜 측면 버튼 로직
     function checkPenButton(e) {
       const isEraserButton = (e.buttons & 2) || (e.buttons & 32);
       
       if (isEraserButton && !tempEraserMode) {
-        cancelCurrentAction();
+        isDrawingLinear = false; linearStart = null;
+        isDrawingPen = false; currentPath = [];
+        isPanning = false; isDraggingImage = false; isResizingImage = false;
+        if (isSelectingLasso) { isSelectingLasso = false; lassoPolygon = []; }
+        if (isTransformingSelection) { isTransformingSelection = false; }
+        
         tempEraserMode = true;
-        buttonTriggeredEraser = false;
         savedTool = currentTool;
         currentTool = 'eraser';
         
@@ -914,7 +910,7 @@
         canvas.style.cursor = 'pointer';
         updateStatus('임시 지우개 모드: 측면 버튼을 떼면 원래 도구로 돌아갑니다.');
       } 
-      else if (!isEraserButton && tempEraserMode && !buttonTriggeredEraser) {
+      else if (!isEraserButton && tempEraserMode) {
         tempEraserMode = false;
         currentTool = savedTool;
         
@@ -929,7 +925,9 @@
         else if (currentTool === 'point') { canvas.style.cursor = 'crosshair'; updateStatus('점 찍기: 화면을 터치하여 점을 찍으세요.'); }
         else if (currentTool === 'segment') { canvas.style.cursor = 'crosshair'; updateStatus('선분 작도: 시작점부터 드래그하세요.'); }
         else if (currentTool === 'line') { canvas.style.cursor = 'crosshair'; updateStatus('직선 작도: 두 점을 지나는 직선을 그립니다.'); }
-        else if (currentTool === 'compass') { canvas.style.cursor = 'crosshair'; updateStatus('컴퍼스 [1단계]: 바늘을 꽂을 중심점을 터치하세요.'); }
+        else if (currentTool === 'compass') { canvas.style.cursor = 'crosshair'; updateStatus('컴퍼스: 이어서 작도할 수 있습니다.'); }
+        else if (currentTool === 'ruler') { canvas.style.cursor = 'crosshair'; updateStatus('자(길이 측정): 시작점부터 드래그하세요.'); }
+        else if (currentTool === 'protractor') { canvas.style.cursor = 'crosshair'; updateStatus('각도기: 이어서 측정할 수 있습니다.'); }
       }
     }
 
@@ -940,7 +938,11 @@
       checkPenButton(e);
 
       if (activePointers.size === 2) {
-        cancelCurrentAction();
+        isDrawingLinear = false; linearStart = null; isDrawingPen = false; currentPath = [];
+        isPanning = false; isDraggingImage = false; isResizingImage = false;
+        if (isSelectingLasso) { isSelectingLasso = false; lassoPolygon = []; }
+        if (isTransformingSelection) { isTransformingSelection = false; }
+        
         const pts = Array.from(activePointers.values());
         initialPinchDist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
         initialPinchScale = scale;
@@ -1002,7 +1004,7 @@
       }
       else if (currentTool === 'pen') { isDrawingPen = true; currentPath = [rawWorld]; }
       else if (currentTool === 'point') { recordState(); elements.push({ type: 'point', x: targetPos.x, y: targetPos.y, color: currentColor }); render(); }
-      else if (currentTool === 'segment' || currentTool === 'line') { isDrawingLinear = true; linearStart = targetPos; }
+      else if (currentTool === 'segment' || currentTool === 'line' || currentTool === 'ruler') { isDrawingLinear = true; linearStart = targetPos; }
       else if (currentTool === 'compass') {
         if (compassStep === 0) {
           compassInitialCenter = { ...targetPos }; compassStep = 1;
@@ -1020,6 +1022,30 @@
           compassDrawStartAngle = Math.atan2(targetPos.y - compassCenter.y, targetPos.x - compassCenter.x);
           compassDrawEndAngle = compassDrawStartAngle; compassCurrentAngle = compassDrawStartAngle;
           compassStep = 4; updateStatus('컴퍼스 [4단계]: 펜을 드래그하여 호를 완성하세요.'); render();
+        }
+      }
+      else if (currentTool === 'protractor') {
+        if (protractorStep === 0) {
+          protractorCenter = { ...targetPos }; protractorStep = 1;
+          updateStatus('각도기 [2단계]: 각도의 시작선(한 변)이 될 점을 터치하세요.'); render();
+        } else if (protractorStep === 1) {
+          const r = Math.hypot(targetPos.x - protractorCenter.x, targetPos.y - protractorCenter.y);
+          if (r > 3 / scale) {
+            protractorRadius = r; protractorStartAngle = Math.atan2(targetPos.y - protractorCenter.y, targetPos.x - protractorCenter.x);
+            protractorCurrentAngle = protractorStartAngle; protractorStep = 2;
+            updateStatus('각도기 [3단계]: 펜을 움직여 각도를 측정하고 화면을 눌러 확정하세요.'); render();
+          }
+        } else if (protractorStep === 2) {
+          protractorCurrentAngle = Math.atan2(targetPos.y - protractorCenter.y, targetPos.x - protractorCenter.x);
+          let diff = Math.abs(protractorCurrentAngle - protractorStartAngle);
+          if (diff > 0.01) {
+            recordState();
+            elements.push({
+              type: 'protractor', center: { ...protractorCenter }, radius: protractorRadius,
+              startAngle: protractorStartAngle, endAngle: protractorCurrentAngle, color: currentColor
+            });
+          }
+          protractorStep = 0; updateStatus('각도기 [1단계]: 각도의 중심점(꼭짓점)을 터치하세요.'); render();
         }
       }
     });
@@ -1086,6 +1112,14 @@
         }
       }
 
+      if (currentTool === 'protractor') {
+        if (protractorStep === 1) { render(); return; }
+        if (protractorStep === 2) {
+          protractorCurrentAngle = Math.atan2(mouseWorld.y - protractorCenter.y, mouseWorld.x - protractorCenter.x);
+          render(); return;
+        }
+      }
+
       if (currentTool === 'lasso') {
         if (isSelectingLasso) { lassoPolygon.push(mouseWorld); render(); return; }
         if (isTransformingSelection && transformStartMouse) {
@@ -1095,8 +1129,8 @@
             for (let i = 0; i < selectedElements.length; i++) {
               const el = selectedElements[i]; const init = initialElementsState[i];
               if (el.type === 'point') { el.x = init.x + dx; el.y = init.y + dy; }
-              else if (el.type === 'segment' || el.type === 'line') { el.p1.x = init.p1.x + dx; el.p1.y = init.p1.y + dy; el.p2.x = init.p2.x + dx; el.p2.y = init.p2.y + dy; }
-              else if (el.type === 'arc') { el.center.x = init.center.x + dx; el.center.y = init.center.y + dy; }
+              else if (el.type === 'segment' || el.type === 'line' || el.type === 'ruler') { el.p1.x = init.p1.x + dx; el.p1.y = init.p1.y + dy; el.p2.x = init.p2.x + dx; el.p2.y = init.p2.y + dy; }
+              else if (el.type === 'arc' || el.type === 'protractor') { el.center.x = init.center.x + dx; el.center.y = init.center.y + dy; }
               else if (el.type === 'path') { el.points = init.points.map(p => ({ x: p.x + dx, y: p.y + dy })); }
             }
           } else if (transformMode === 'resize') {
@@ -1106,8 +1140,8 @@
             for (let i = 0; i < selectedElements.length; i++) {
               const el = selectedElements[i]; const init = initialElementsState[i];
               if (el.type === 'point') { el.x = originCornerX + (init.x - originCornerX) * scaleFactor; el.y = originCornerY + (init.y - originCornerY) * scaleFactor; }
-              else if (el.type === 'segment' || el.type === 'line') { el.p1.x = originCornerX + (init.p1.x - originCornerX) * scaleFactor; el.p1.y = originCornerY + (init.p1.y - originCornerY) * scaleFactor; el.p2.x = originCornerX + (init.p2.x - originCornerX) * scaleFactor; el.p2.y = originCornerY + (init.p2.y - originCornerY) * scaleFactor; }
-              else if (el.type === 'arc') { el.center.x = originCornerX + (init.center.x - originCornerX) * scaleFactor; el.center.y = originCornerY + (init.center.y - originCornerY) * scaleFactor; el.radius = init.radius * scaleFactor; }
+              else if (el.type === 'segment' || el.type === 'line' || el.type === 'ruler') { el.p1.x = originCornerX + (init.p1.x - originCornerX) * scaleFactor; el.p1.y = originCornerY + (init.p1.y - originCornerY) * scaleFactor; el.p2.x = originCornerX + (init.p2.x - originCornerX) * scaleFactor; el.p2.y = originCornerY + (init.p2.y - originCornerY) * scaleFactor; }
+              else if (el.type === 'arc' || el.type === 'protractor') { el.center.x = originCornerX + (init.center.x - originCornerX) * scaleFactor; el.center.y = originCornerY + (init.center.y - originCornerY) * scaleFactor; el.radius = init.radius * scaleFactor; }
               else if (el.type === 'path') { el.points = init.points.map(p => ({ x: originCornerX + (p.x - originCornerX) * scaleFactor, y: originCornerY + (p.y - originCornerY) * scaleFactor })); }
             }
           } else if (transformMode === 'rotate') {
@@ -1121,8 +1155,8 @@
                     return { x: cx + dxPt * Math.cos(angle) - dyPt * Math.sin(angle), y: cy + dxPt * Math.sin(angle) + dyPt * Math.cos(angle) };
                 };
                 if (el.type === 'point') { const p = rotatePt(init); el.x = p.x; el.y = p.y; }
-                else if (el.type === 'segment' || el.type === 'line') { el.p1 = rotatePt(init.p1); el.p2 = rotatePt(init.p2); }
-                else if (el.type === 'arc') { el.center = rotatePt(init.center); el.startAngle = init.startAngle + angle; el.endAngle = init.endAngle + angle; }
+                else if (el.type === 'segment' || el.type === 'line' || el.type === 'ruler') { el.p1 = rotatePt(init.p1); el.p2 = rotatePt(init.p2); }
+                else if (el.type === 'arc' || el.type === 'protractor') { el.center = rotatePt(init.center); el.startAngle = init.startAngle + angle; el.endAngle = init.endAngle + angle; }
                 else if (el.type === 'path') { el.points = init.points.map(p => rotatePt(p)); }
             }
           }
@@ -1171,8 +1205,8 @@
           if (lassoPolygon.length > 2) {
             selectedElements = elements.filter(el => {
               if (el.type === 'point') return isPointInPolygon(el, lassoPolygon);
-              if (el.type === 'segment' || el.type === 'line') return isPointInPolygon(el.p1, lassoPolygon) || isPointInPolygon(el.p2, lassoPolygon);
-              if (el.type === 'arc') return isPointInPolygon(el.center, lassoPolygon);
+              if (el.type === 'segment' || el.type === 'line' || el.type === 'ruler') return isPointInPolygon(el.p1, lassoPolygon) || isPointInPolygon(el.p2, lassoPolygon);
+              if (el.type === 'arc' || el.type === 'protractor') return isPointInPolygon(el.center, lassoPolygon);
               if (el.type === 'path') return el.points.some(p => isPointInPolygon(p, lassoPolygon));
               return false;
             });
@@ -1194,9 +1228,8 @@
         if (currentPath.length > 1) { recordState(); elements.push({ type: 'path', points: currentPath, color: currentColor, lineWidth: 2 }); }
         currentPath = []; render();
       }
-      else if ((currentTool === 'segment' || currentTool === 'line') && isDrawingLinear) {
+      else if ((currentTool === 'segment' || currentTool === 'line' || currentTool === 'ruler') && isDrawingLinear) {
         isDrawingLinear = false;
-        // 수평/수직 보정 위치를 최종 확정 데이터로 저장
         const finalPos = getOrthoTarget(linearStart, targetPos);
         const dist = Math.hypot(finalPos.x - linearStart.x, finalPos.y - linearStart.y);
         
@@ -1272,13 +1305,14 @@
       currentTool = tool;
       
       tempEraserMode = false;
-      buttonTriggeredEraser = false;
       savedTool = null;
       
       document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('btn-' + tool).classList.add('active');
+      const activeBtn = document.getElementById('btn-' + tool);
+      if (activeBtn) activeBtn.classList.add('active');
       
       compassStep = 0; compassInitialCenter = null; compassCenter = null; compassRadius = 0;
+      protractorStep = 0; protractorCenter = null; protractorRadius = 0;
       isDrawingLinear = false; linearStart = null; isDrawingPen = false; currentPath = [];
       activeSnapPoint = null; clearSelection();
 
@@ -1290,6 +1324,8 @@
       else if (tool === 'segment') { canvas.style.cursor = 'crosshair'; updateStatus('선분 작도: 시작점부터 드래그하세요.'); }
       else if (tool === 'line') { canvas.style.cursor = 'crosshair'; updateStatus('직선 작도: 두 점을 지나는 직선을 그립니다.'); }
       else if (tool === 'compass') { canvas.style.cursor = 'crosshair'; updateStatus('컴퍼스 [1단계]: 바늘을 꽂을 중심점을 터치하세요.'); }
+      else if (tool === 'ruler') { canvas.style.cursor = 'crosshair'; updateStatus('자(길이 측정): 측정할 선을 드래그하세요.'); }
+      else if (tool === 'protractor') { canvas.style.cursor = 'crosshair'; updateStatus('각도기 [1단계]: 각도의 중심점(꼭짓점)을 터치하세요.'); }
       render();
     }
 
@@ -1303,6 +1339,8 @@
     document.getElementById('btn-segment').onclick = () => setActiveTool('segment');
     document.getElementById('btn-line').onclick = () => setActiveTool('line');
     document.getElementById('btn-compass').onclick = () => setActiveTool('compass');
+    document.getElementById('btn-ruler').onclick = () => setActiveTool('ruler');
+    document.getElementById('btn-protractor').onclick = () => setActiveTool('protractor');
     document.getElementById('btn-upload').onclick = () => imageInput.click();
 
     document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(scale * 1.2, 10); render(); };
