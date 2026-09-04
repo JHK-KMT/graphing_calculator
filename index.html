@@ -37,7 +37,6 @@
       touch-action: none;
     }
 
-    /* 다시 원래 크기로 줄인 툴바 */
     .toolbar-container {
       position: absolute;
       top: 20px;
@@ -135,7 +134,6 @@
 
   <div class="toolbar-container">
     <div class="toolbar">
-      <!-- 18x18로 다시 줄인 아이콘들 -->
       <button class="tool-btn active" id="btn-pan" title="포인터 (ESC)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 7 7-3 1 9 4-4-9 1-3z"/></svg>
       </button>
@@ -253,12 +251,10 @@
     let initialPanMid = null;
     let initialOrigin = { x: 0, y: 0 };
 
-    // S펜 우클릭/메뉴 호출 차단
     window.addEventListener('contextmenu', e => e.preventDefault());
 
     function resizeCanvas() {
       const container = document.getElementById('canvas-container');
-      // 브라우저 렌더링 지연에 구애받지 않도록 컨테이너 크기로 강제 동기화 (15% 잘림 문제 해결)
       canvas.width = container.offsetWidth;
       canvas.height = container.offsetHeight;
       render();
@@ -379,18 +375,93 @@
       return pts;
     }
 
+    // ----------------------------------------------------
+    // 선 위로 투영(Projection)하는 수학 함수 추가
+    // ----------------------------------------------------
+    function projectPointToSegment(p, v, w) {
+      const l2 = (v.x - w.x) ** 2 + (v.y - w.y) ** 2;
+      if (l2 === 0) return { x: v.x, y: v.y };
+      let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      return { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) };
+    }
+
+    function projectPointToLine(p, v, w) {
+      const l2 = (v.x - w.x) ** 2 + (v.y - w.y) ** 2;
+      if (l2 === 0) return { x: v.x, y: v.y };
+      let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+      return { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) };
+    }
+
+    function projectPointToArc(p, arc) {
+      const cx = arc.center.x, cy = arc.center.y;
+      const angle = Math.atan2(p.y - cy, p.x - cx);
+      if (isAngleOnArc(angle, arc.startAngle, arc.endAngle)) {
+        return { x: cx + arc.radius * Math.cos(angle), y: cy + arc.radius * Math.sin(angle) };
+      } else {
+        // 호의 각도를 벗어났다면 가장 가까운 양 끝점 반환
+        const p1 = { x: cx + arc.radius * Math.cos(arc.startAngle), y: cy + arc.radius * Math.sin(arc.startAngle) };
+        const p2 = { x: cx + arc.radius * Math.cos(arc.endAngle), y: cy + arc.radius * Math.sin(arc.endAngle) };
+        return (Math.hypot(p.x - p1.x, p.y - p1.y) < Math.hypot(p.x - p2.x, p.y - p2.y)) ? p1 : p2;
+      }
+    }
+
+    function projectPointToPath(p, points) {
+      let minDist = Infinity;
+      let bestProj = null;
+      for (let i = 0; i < points.length - 1; i++) {
+        let proj = projectPointToSegment(p, points[i], points[i + 1]);
+        let d = Math.hypot(p.x - proj.x, p.y - proj.y);
+        if (d < minDist) { minDist = d; bestProj = proj; }
+      }
+      return bestProj;
+    }
+
+    // ----------------------------------------------------
+    // 스냅 로직 업그레이드: 점(교점) 최우선 -> 선 위의 점 차선
+    // ----------------------------------------------------
     function findSnapPoint(worldPos) {
       if (['pan', 'lasso', 'eraser', 'pen'].includes(currentTool)) return null;
+      
+      const snapThreshold = 18 / scale; 
+      
+      let nearestPoint = null;
+      let minPointDist = snapThreshold;
+
+      // 1순위: 명시적 점(끝점, 중심점)이나 교점에 스냅
       const points = getAllPoints();
-      const snapThreshold = 14 / scale; 
-      let nearest = null;
-      let minDist = snapThreshold;
       for (const pt of points) {
         const d = Math.hypot(pt.x - worldPos.x, pt.y - worldPos.y);
-        if (d < minDist) { minDist = d; nearest = pt; }
+        if (d < minPointDist) { minPointDist = d; nearestPoint = pt; }
       }
-      return nearest;
+
+      // 점에 스냅할 수 있다면 즉시 반환 (선 위보다 점이 최우선!)
+      if (nearestPoint) return nearestPoint;
+
+      // 2순위: 점이 주변에 없다면, 선/호/곡선 위의 가장 가까운 곳에 스냅
+      let nearestOnLine = null;
+      let minLineDist = snapThreshold;
+
+      for (const el of elements) {
+        let proj = null;
+        if (el.type === 'segment') proj = projectPointToSegment(worldPos, el.p1, el.p2);
+        else if (el.type === 'line') proj = projectPointToLine(worldPos, el.p1, el.p2);
+        else if (el.type === 'arc') proj = projectPointToArc(worldPos, el);
+        else if (el.type === 'path') proj = projectPointToPath(worldPos, el.points);
+
+        if (proj) {
+          const d = Math.hypot(proj.x - worldPos.x, proj.y - worldPos.y);
+          if (d < minLineDist) {
+            minLineDist = d;
+            // isOnLine 속성을 주어 렌더링 시 교점과 구분 가능하게 함
+            nearestOnLine = { x: proj.x, y: proj.y, isIntersection: false, isOnLine: true };
+          }
+        }
+      }
+
+      return nearestOnLine;
     }
+
 
     function isPointInPolygon(p, polygon) {
       let inside = false;
@@ -418,7 +489,7 @@
     }
 
     function findElementAt(worldPos) {
-      const threshold = 10 / scale; 
+      const threshold = 16 / scale; 
       for (let i = elements.length - 1; i >= 0; i--) {
         const el = elements[i];
         if (el.type === 'point') {
@@ -700,6 +771,7 @@
           ctx.moveTo(activeSnapPoint.x, activeSnapPoint.y - crossSize); ctx.lineTo(activeSnapPoint.x, activeSnapPoint.y + crossSize); ctx.stroke();
           ctx.fillStyle = 'rgba(239, 68, 68, 0.2)'; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.fill();
         } else {
+          // 선 위 스냅인지, 일반 점 스냅인지 시각적 표시
           ctx.strokeStyle = currentColor; ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.stroke();
           ctx.fillStyle = 'rgba(37, 99, 235, 0.2)'; ctx.beginPath(); ctx.arc(activeSnapPoint.x, activeSnapPoint.y, 8 / scale, 0, Math.PI * 2); ctx.fill();
         }
@@ -720,12 +792,12 @@
       canvas.setPointerCapture(e.pointerId);
       activePointers.set(e.pointerId, e);
 
-      // S펜 측면 버튼 누른 채 터치하거나, 마우스 우클릭 시 임시 지우개 모드 발동
+      // S펜 측면 버튼 누른 채 터치하거나 마우스 우클릭 시 임시 지우개 모드
       if ((e.buttons & 2) || (e.buttons & 32)) {
         const rawWorld = screenToWorld(e.clientX, e.clientY);
         const hitIdx = findElementAt(rawWorld);
         if (hitIdx !== -1) { recordState(); elements.splice(hitIdx, 1); render(); }
-        return; // 정상적인 작도 로직은 실행하지 않음
+        return;
       }
 
       if (activePointers.size === 2) {
@@ -818,7 +890,6 @@
         activePointers.set(e.pointerId, e);
       }
 
-      // 펜의 측면 버튼을 누른 채로 화면을 문지르면 지우개 작동
       if ((e.buttons & 2) || (e.buttons & 32)) {
         const rawWorld = screenToWorld(e.clientX, e.clientY);
         const hitIdx = findElementAt(rawWorld);
@@ -1077,7 +1148,6 @@
     document.getElementById('btn-undo').onclick = undo;
     document.getElementById('btn-clear').onclick = () => { recordState(); elements = []; selectedImage = null; clearSelection(); render(); };
 
-    // 첫 실행 시 화면 맞춰주기
     resizeCanvas();
     setActiveTool('pan');
   </script>
